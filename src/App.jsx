@@ -179,9 +179,9 @@ const VoidVoyager = () => {
     const scene = new THREE.Scene();
     sceneRef.current = scene;
     
-    const isLowPerformance = isMobile;
+    const isLowPerformance = false;
     const planetSegments = isLowPerformance ? 32 : 64;
-    const starCount = isLowPerformance ? 1500 : 8000;
+    const starCount = isMobile ? 1500 : 8000;
     
     const fov = isMobile ? 85 : 75;
     const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 5000);
