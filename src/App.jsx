@@ -373,14 +373,15 @@ const VoidVoyager = () => {
         name: "Mercury",
         radius: 1.5,
         distance: 28,
-        color: 0xd0b8ae,
-        emissive: 0x3a3a3f,
-        roughness: 0.6,
-        metalness: 0.7,
+        color: 0xff7700,
+        emissive: 0x552200,
+        roughness: 0.8,
+        metalness: 0.5,
         speed: 0.004,
         tilt: 0.034,
+        eccentricity: 0.205,
         description:
-          "Mercury is the smallest planet in the Solar System and the closest to the Sun. It has a cratered surface similar to our Moon.",
+          "Mercury is the smallest planet in the Solar System and the closest to the Sun. Its heavily cratered surface resembles our Moon. With extreme temperature variations, the dayside can reach 430°C while the nightside plunges to -180°C.",
         moons: [],
       },
       {
@@ -693,7 +694,85 @@ const VoidVoyager = () => {
 
       let planetMaterial;
 
-      if (planet.name === "Earth" && planet.textured) {
+      if (planet.name === "Mercury" && planet.customShader) {
+        planetMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            baseColor: { value: new THREE.Color(planet.color) },
+            emissiveColor: {
+              value: new THREE.Color(planet.emissive || 0x000000),
+            },
+            time: { value: 0 },
+            roughness: { value: planet.roughness || 0.7 },
+            metalness: { value: planet.metalness || 0.1 },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            void main() {
+              vUv = uv;
+              vNormal = normalize(normalMatrix * normal);
+              vPosition = position;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform vec3 baseColor;
+            uniform vec3 emissiveColor;
+            uniform float time;
+            uniform float roughness;
+            uniform float metalness;
+            
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            // Noise function for crater generation
+            float noise(vec2 n) {
+              const vec2 d = vec2(0.0, 1.0);
+              vec2 b = floor(n);
+              vec2 f = smoothstep(vec2(0.0), vec2(1.0), fract(n));
+              return mix(mix(rand(b), rand(b + d.yx), f.x), mix(rand(b + d.xy), rand(b + d.yy), f.x), f.y);
+            }
+            
+            float rand(vec2 n) { 
+              return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+            }
+            
+            void main() {
+              // Base color adjusted by lighting
+              vec3 lightDir = normalize(vec3(0.0, 0.0, 1.0));
+              float lightIntensity = max(0.1, dot(vNormal, lightDir));
+              
+              // Create crater effect
+              float crater1 = smoothstep(0.4, 0.5, noise(vUv * 20.0));
+              float crater2 = smoothstep(0.6, 0.7, noise(vUv * 10.0 + 5.0));
+              float crater3 = smoothstep(0.5, 0.6, noise(vUv * 30.0 - 8.0));
+              
+              float craterEffect = crater1 * 0.3 + crater2 * 0.4 + crater3 * 0.3;
+              
+              // Surface variations
+              float surfaceVariation = noise(vUv * 50.0) * 0.1;
+              
+              // Blend base color with crater and surface details
+              vec3 surfaceColor = baseColor;
+              surfaceColor = mix(surfaceColor, surfaceColor * 0.7, craterEffect);
+              surfaceColor = mix(surfaceColor, surfaceColor * 1.1, surfaceVariation);
+              
+              // Apply lighting
+              vec3 finalColor = surfaceColor * lightIntensity;
+              finalColor += emissiveColor * 0.3;
+              
+              // Add subtle atmosphere at edges
+              float atmosphereFactor = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 4.0) * 0.2;
+              finalColor = mix(finalColor, vec3(0.6, 0.5, 0.4), atmosphereFactor);
+              
+              gl_FragColor = vec4(finalColor, 1.0);
+            }
+          `,
+        });
+      } else if (planet.name === "Earth" && planet.textured) {
         planetMaterial = new THREE.ShaderMaterial({
           uniforms: {
             dayTexture: { value: earthTextures.daymap },
@@ -1760,7 +1839,7 @@ const VoidVoyager = () => {
         planet.angle += planet.data.speed * currentSpeed;
 
         const distance = planet.data.distance;
-        const eccentricity = 0.05;
+        const eccentricity = planet.data.eccentricity || 0.05;
         const a = distance;
         const b = distance * Math.sqrt(1 - eccentricity * eccentricity);
 
