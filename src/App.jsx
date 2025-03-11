@@ -3,6 +3,31 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Github } from 'lucide-react';
 
+const GoogleAnalytics = () => {
+  useEffect(() => {
+    if (!import.meta.env.VITE_GA_ID) {
+      console.log("issues with GA");
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${
+      import.meta.env.VITE_GA_ID
+    }`;
+    document.head.appendChild(script);
+
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      window.dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+    gtag("config", import.meta.env.VITE_GA_ID);
+  }, []);
+
+  return null;
+};
+
 const VoidVoyager = () => {
   const mountRef = useRef(null);
   const [showPlanets, setShowPlanets] = useState(true);
@@ -1288,6 +1313,7 @@ const VoidVoyager = () => {
   
   return (
     <div className="w-full h-screen bg-black relative overflow-hidden">
+      <GoogleAnalytics/>
       <div ref={mountRef} className="w-full h-full" />
       
       {hoveredPlanet && (
