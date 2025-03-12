@@ -627,35 +627,37 @@ const VoidVoyager = () => {
               },
             ],
       },
-      {
-        name: "Neptune",
-        radius: 2.8,
-        distance: 170,
-        color: 0x2b5dfe,
-        emissive: 0x17265d,
-        roughness: 0.5,
-        metalness: 0.3,
-        speed: 0.0005,
-        tilt: 0.49,
-        atmosphere: !isLowPerformance,
-        atmosphereColor: 0x6fa3fa,
-        description:
-          "Neptune is the farthest planet from the Sun. It's an ice giant with the strongest winds in the Solar System, reaching speeds of 2,100 km/h.",
-        moons: isLowPerformance
-          ? []
-          : [
-              {
-                name: "Triton",
-                radius: 0.7,
-                distance: 7.5,
-                color: 0xffffff,
-                emissive: 0x32323b,
-                roughness: 0.6,
-                metalness: 0.2,
-                speed: 0.012,
-              },
-            ],
-      },
+      // Find the Neptune entry in your planetData array and replace it
+{
+  name: "Neptune",
+  radius: 2.8,
+  distance: 170,
+  color: 0x2b5dfe,
+  emissive: 0x17265d,
+  roughness: 0.5,
+  metalness: 0.3,
+  speed: 0.0005,
+  tilt: 0.49,
+  atmosphere: true,
+  atmosphereColor: 0x6fa3fa,
+  customShader: true,
+  description:
+    "Neptune is the farthest planet from the Sun. It's an ice giant with the strongest winds in the Solar System, reaching speeds of 2,100 km/h.",
+  moons: isLowPerformance
+    ? []
+    : [
+        {
+          name: "Triton",
+          radius: 0.7,
+          distance: 7.5,
+          color: 0xffffff,
+          emissive: 0x32323b,
+          roughness: 0.6,
+          metalness: 0.2,
+          speed: 0.012,
+        },
+      ],
+}
     ];
 
     const planets = {};
@@ -1124,6 +1126,127 @@ const VoidVoyager = () => {
               gl_FragColor = vec4(finalColor, 1.0);
             }
           `,
+        });
+      } else if (planet.name === "Neptune" && planet.customShader) {
+        planetMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            time: { value: 0 },
+            baseColor: { value: new THREE.Color(0x2b5dfe) },
+            darkColor: { value: new THREE.Color(0x1a3a8c) },
+            brightColor: { value: new THREE.Color(0x6fa3fa) },
+            spotColor: { value: new THREE.Color(0x173777) },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            void main() {
+              vUv = uv;
+              vNormal = normalize(normalMatrix * normal);
+              vPosition = position;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform float time;
+            uniform vec3 baseColor;
+            uniform vec3 darkColor;
+            uniform vec3 brightColor;
+            uniform vec3 spotColor;
+            
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            float hash(vec2 p) {
+              return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+            
+            float noise(vec2 p) {
+              vec2 i = floor(p);
+              vec2 f = fract(p);
+              f = f * f * (3.0 - 2.0 * f);
+              return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                         mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+            }
+            
+            float fbm(vec2 p) {
+              float value = 0.0;
+              float amplitude = 0.5;
+              float frequency = 1.0;
+              for (int i = 0; i < 6; i++) {
+                value += amplitude * noise(p * frequency);
+                amplitude *= 0.5;
+                frequency *= 2.0;
+              }
+              return value;
+            }
+            
+            void main() {
+              vec3 lightDir = normalize(vec3(0.0, 0.0, 1.0));
+              float light = max(0.3, dot(vNormal, lightDir));
+              
+              vec3 normalizedPos = normalize(vPosition);
+              float lat = asin(normalizedPos.y);
+              float lon = atan(normalizedPos.z, normalizedPos.x);
+              
+              // Create bands with varying speeds based on latitude
+              float bandSpeed = cos(lat * 2.0) * 2.0;
+              vec2 windOffset = vec2(time * 0.02 * bandSpeed, 0.0);
+              
+              // Create cloud bands
+              float bandPattern = sin(lat * 20.0 + time * 0.1) * 0.5 + 0.5;
+              bandPattern *= sin(lat * 10.0 - time * 0.05) * 0.5 + 0.5;
+              
+              // Cloud patterns with different speeds per latitude
+              vec2 cloudUV = vec2(lon * 0.1, lat * 0.5) + windOffset;
+              float cloudPattern1 = fbm(cloudUV * 5.0 + vec2(time * 0.03, 0.0));
+              float cloudPattern2 = fbm(cloudUV * 10.0 - vec2(time * 0.02, 0.0));
+              float cloudPattern3 = fbm(cloudUV * 20.0 + vec2(0.0, time * 0.01));
+              
+              float cloudMix = cloudPattern1 * 0.6 + cloudPattern2 * 0.3 + cloudPattern3 * 0.1;
+              cloudMix = cloudMix * 0.8 + 0.2;
+              
+              // Create the Great Dark Spot
+              float spotDist = length(vec2(lon, lat * 2.0) - vec2(0.4 + sin(time * 0.1) * 0.1, 0.2));
+              float darkSpot = smoothstep(0.5, 0.1, spotDist);
+              
+              // Create smaller atmospheric storms
+              float storm1 = smoothstep(0.3, 0.05, length(vec2(lon, lat * 2.0) - vec2(-0.8, -0.3)));
+              float storm2 = smoothstep(0.2, 0.05, length(vec2(lon, lat * 2.0) - vec2(1.2, 0.5)));
+              
+              // Combine cloud features
+              float stormFeatures = max(darkSpot, max(storm1, storm2));
+              
+              // Create atmospheric bands with turbulence
+              float bandY = lat * 10.0;
+              float turbulence = fbm(vec2(lon * 3.0 + time * 0.05, bandY));
+              float bands = sin(bandY + turbulence * 2.0) * 0.5 + 0.5;
+              
+              // Combine all atmospheric features
+              float mixFactor = cloudMix * (0.8 + bands * 0.4);
+              
+              // Color the planet based on features
+              vec3 cloudColor = mix(baseColor, brightColor, cloudMix);
+              vec3 bandColor = mix(baseColor, darkColor, bands * 0.5);
+              vec3 surfaceColor = mix(bandColor, cloudColor, mixFactor);
+              
+              // Apply storm coloration
+              surfaceColor = mix(surfaceColor, spotColor, darkSpot * 0.7);
+              surfaceColor = mix(surfaceColor, brightColor, storm1 * 0.3);
+              surfaceColor = mix(surfaceColor, brightColor, storm2 * 0.3);
+              
+              // Apply lighting
+              vec3 finalColor = surfaceColor * light;
+              
+              // Add bright limb (edge) effects
+              float limb = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 4.0);
+              finalColor += limb * vec3(0.3, 0.5, 0.8) * 0.3;
+              
+              gl_FragColor = vec4(finalColor, 1.0);
+            }
+          `
         });
       } else {
         planetMaterial = new THREE.MeshStandardMaterial({
@@ -2193,6 +2316,19 @@ const VoidVoyager = () => {
             child.material.uniforms &&
             child.material.uniforms.time
           ) {
+            child.material.uniforms.time.value += delta;
+          }
+        });
+      }
+
+      if (planets["Neptune"] && planets["Neptune"].mesh) {
+        const neptuneMesh = planets["Neptune"].mesh;
+        if (neptuneMesh.material && neptuneMesh.material.uniforms && neptuneMesh.material.uniforms.time) {
+          neptuneMesh.material.uniforms.time.value += delta;
+        }
+        
+        neptuneMesh.children.forEach((child) => {
+          if (child.material && child.material.uniforms && child.material.uniforms.time) {
             child.material.uniforms.time.value += delta;
           }
         });
