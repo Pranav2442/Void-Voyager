@@ -588,77 +588,77 @@ const VoidVoyager = () => {
               },
             ],
       },
-{
-  name: "Uranus",
-  radius: 2.8,
-  distance: 140,
-  color: 0x4be2ee,
-  emissive: 0x194d4e,
-  roughness: 0.5,
-  metalness: 0.3,
-  speed: 0.0006,
-  tilt: 1.71,
-  atmosphere: true,
-  atmosphereColor: 0x99fafe,
-  customShader: true,
-  rings: true,
-  description:
-    "Uranus is an ice giant with a unique feature - it rotates on its side, likely due to a massive collision in its early history.",
-  moons: isLowPerformance
-    ? []
-    : [
-        {
-          name: "Titania",
-          radius: 0.6,
-          distance: 6.5,
-          color: 0xd4d4d4,
-          emissive: 0x323232,
-          roughness: 0.7,
-          metalness: 0.1,
-          speed: 0.013,
-        },
-        {
-          name: "Oberon",
-          radius: 0.55,
-          distance: 8.5,
-          color: 0x929292,
-          emissive: 0x323232,
-          roughness: 0.8,
-          metalness: 0.1,
-          speed: 0.01,
-        },
-      ],
-},
-{
-  name: "Neptune",
-  radius: 2.8,
-  distance: 170,
-  color: 0x2b5dfe,
-  emissive: 0x17265d,
-  roughness: 0.5,
-  metalness: 0.3,
-  speed: 0.0005,
-  tilt: 0.49,
-  atmosphere: true,
-  atmosphereColor: 0x6fa3fa,
-  customShader: true,
-  description:
-    "Neptune is the farthest planet from the Sun. It's an ice giant with the strongest winds in the Solar System, reaching speeds of 2,100 km/h.",
-  moons: isLowPerformance
-    ? []
-    : [
-        {
-          name: "Triton",
-          radius: 0.7,
-          distance: 7.5,
-          color: 0xffffff,
-          emissive: 0x32323b,
-          roughness: 0.6,
-          metalness: 0.2,
-          speed: 0.012,
-        },
-      ],
-}
+      {
+        name: "Uranus",
+        radius: 2.8,
+        distance: 140,
+        color: 0x4be2ee,
+        emissive: 0x194d4e,
+        roughness: 0.5,
+        metalness: 0.3,
+        speed: 0.0006,
+        tilt: 1.71,
+        atmosphere: true,
+        atmosphereColor: 0x99fafe,
+        customShader: true,
+        rings: true,
+        description:
+          "Uranus is an ice giant with a unique feature - it rotates on its side, likely due to a massive collision in its early history.",
+        moons: isLowPerformance
+          ? []
+          : [
+              {
+                name: "Titania",
+                radius: 0.6,
+                distance: 6.5,
+                color: 0xd4d4d4,
+                emissive: 0x323232,
+                roughness: 0.7,
+                metalness: 0.1,
+                speed: 0.013,
+              },
+              {
+                name: "Oberon",
+                radius: 0.55,
+                distance: 8.5,
+                color: 0x929292,
+                emissive: 0x323232,
+                roughness: 0.8,
+                metalness: 0.1,
+                speed: 0.01,
+              },
+            ],
+      },
+      {
+        name: "Neptune",
+        radius: 2.8,
+        distance: 170,
+        color: 0x2b5dfe,
+        emissive: 0x17265d,
+        roughness: 0.5,
+        metalness: 0.3,
+        speed: 0.0005,
+        tilt: 0.49,
+        atmosphere: true,
+        atmosphereColor: 0x6fa3fa,
+        customShader: true,
+        description:
+          "Neptune is the farthest planet from the Sun. It's an ice giant with the strongest winds in the Solar System, reaching speeds of 2,100 km/h.",
+        moons: isLowPerformance
+          ? []
+          : [
+              {
+                name: "Triton",
+                radius: 0.7,
+                distance: 7.5,
+                color: 0xffffff,
+                emissive: 0x32323b,
+                roughness: 0.6,
+                metalness: 0.2,
+                speed: 0.012,
+              },
+            ],
+      },
     ];
 
     const planets = {};
@@ -1247,7 +1247,7 @@ const VoidVoyager = () => {
               
               gl_FragColor = vec4(finalColor, 1.0);
             }
-          `
+          `,
         });
       } else if (planet.name === "Uranus" && planet.customShader) {
         planetMaterial = new THREE.ShaderMaterial({
@@ -1354,7 +1354,7 @@ const VoidVoyager = () => {
               
               gl_FragColor = vec4(finalColor, 1.0);
             }
-          `
+          `,
         });
       } else {
         planetMaterial = new THREE.MeshStandardMaterial({
@@ -2431,12 +2431,20 @@ const VoidVoyager = () => {
 
       if (planets["Neptune"] && planets["Neptune"].mesh) {
         const neptuneMesh = planets["Neptune"].mesh;
-        if (neptuneMesh.material && neptuneMesh.material.uniforms && neptuneMesh.material.uniforms.time) {
+        if (
+          neptuneMesh.material &&
+          neptuneMesh.material.uniforms &&
+          neptuneMesh.material.uniforms.time
+        ) {
           neptuneMesh.material.uniforms.time.value += delta;
         }
-        
+
         neptuneMesh.children.forEach((child) => {
-          if (child.material && child.material.uniforms && child.material.uniforms.time) {
+          if (
+            child.material &&
+            child.material.uniforms &&
+            child.material.uniforms.time
+          ) {
             child.material.uniforms.time.value += delta;
           }
         });
@@ -2444,12 +2452,20 @@ const VoidVoyager = () => {
 
       if (planets["Uranus"] && planets["Uranus"].mesh) {
         const uranusMesh = planets["Uranus"].mesh;
-        if (uranusMesh.material && uranusMesh.material.uniforms && uranusMesh.material.uniforms.time) {
+        if (
+          uranusMesh.material &&
+          uranusMesh.material.uniforms &&
+          uranusMesh.material.uniforms.time
+        ) {
           uranusMesh.material.uniforms.time.value += delta;
         }
-        
+
         uranusMesh.children.forEach((child) => {
-          if (child.material && child.material.uniforms && child.material.uniforms.time) {
+          if (
+            child.material &&
+            child.material.uniforms &&
+            child.material.uniforms.time
+          ) {
             child.material.uniforms.time.value += delta;
           }
         });
