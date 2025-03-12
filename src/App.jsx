@@ -398,6 +398,7 @@ const VoidVoyager = () => {
           "Venus is the hottest planet in our Solar System, with a thick, toxic atmosphere that traps heat. It has extreme greenhouse effect.",
         atmosphere: true,
         atmosphereColor: 0xf5e3bf,
+        customShader: true,
         moons: [],
       },
       {
@@ -430,45 +431,44 @@ const VoidVoyager = () => {
           },
         ],
       },
-      {
-        name: "Mars",
-        radius: 1.5,
-        distance: 60,
-        color: 0xf67c3c,
-        emissive: 0x522b1a,
-        roughness: 0.7,
-        metalness: 0.0,
-        speed: 0.0024,
-        tilt: 0.44,
-        atmosphere: !isLowPerformance,
-        atmosphereColor: 0xf6b588,
-        description:
-          "Mars is known as the Red Planet due to iron oxide (rust) on its surface. It has polar ice caps and was once more Earth-like with flowing water.",
-        moons: isLowPerformance
-          ? []
-          : [
-              {
-                name: "Phobos",
-                radius: 0.4,
-                distance: 3.5,
-                color: 0xd0c7a9,
-                emissive: 0x333328,
-                roughness: 0.9,
-                metalness: 0.1,
-                speed: 0.02,
-              },
-              {
-                name: "Deimos",
-                radius: 0.3,
-                distance: 4.5,
-                color: 0xd4cdc3,
-                emissive: 0x333328,
-                roughness: 0.9,
-                metalness: 0.1,
-                speed: 0.015,
-              },
-            ],
-      },
+{
+  name: "Mars",
+  radius: 1.5,
+  distance: 60,
+  color: 0xf67c3c,
+  emissive: 0x522b1a,
+  roughness: 0.7,
+  metalness: 0.0,
+  speed: 0.0024,
+  tilt: 0.44,
+  atmosphere: true,  
+  atmosphereColor: 0xf6b588,
+  customShader: true,  
+  description:
+    "Mars is known as the Red Planet due to iron oxide (rust) on its surface. It has polar ice caps and was once more Earth-like with flowing water.",
+  moons: [
+    {
+      name: "Phobos",
+      radius: 0.4,
+      distance: 3.5,
+      color: 0xd0c7a9,
+      emissive: 0x333328,
+      roughness: 0.9,
+      metalness: 0.1,
+      speed: 0.02,
+    },
+    {
+      name: "Deimos",
+      radius: 0.3,
+      distance: 4.5,
+      color: 0xd4cdc3,
+      emissive: 0x333328,
+      roughness: 0.9,
+      metalness: 0.1,
+      speed: 0.015,
+    },
+  ],
+},
       {
         name: "Jupiter",
         radius: 4.5,
@@ -893,6 +893,238 @@ const VoidVoyager = () => {
             }
           `,
         });
+      } else if (planet.name === "Mars" && planet.customShader) {
+        planetMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            time: { value: 0 },
+            baseColor: { value: new THREE.Color(0xf67c3c) },  
+            polarColor: { value: new THREE.Color(0xffffff) }, 
+            highlightColor: { value: new THREE.Color(0xe8c9a0) },
+            lowlandColor: { value: new THREE.Color(0xba5536) }, 
+            emissiveColor: { value: new THREE.Color(0x522b1a) },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            void main() {
+              vUv = uv;
+              vNormal = normalize(normalMatrix * normal);
+              vPosition = position;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform float time;
+            uniform vec3 baseColor;
+            uniform vec3 polarColor;
+            uniform vec3 highlightColor;
+            uniform vec3 lowlandColor;
+            uniform vec3 emissiveColor;
+            
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            // Perlin-like noise function for terrain features
+            float hash(vec3 p) {
+              p = fract(p * vec3(443.8975, 397.2973, 491.1871));
+              p += dot(p.zxy, p.yxz + 19.27);
+              return fract(p.x * p.y * p.z);
+            }
+            
+            float noise(vec3 p) {
+              vec3 i = floor(p);
+              vec3 f = fract(p);
+              f = f * f * (3.0 - 2.0 * f);
+              
+              float a = hash(i);
+              float b = hash(i + vec3(1.0, 0.0, 0.0));
+              float c = hash(i + vec3(0.0, 1.0, 0.0));
+              float d = hash(i + vec3(1.0, 1.0, 0.0));
+              float e = hash(i + vec3(0.0, 0.0, 1.0));
+              float f2 = hash(i + vec3(1.0, 0.0, 1.0));
+              float g = hash(i + vec3(0.0, 1.0, 1.0));
+              float h = hash(i + vec3(1.0, 1.0, 1.0));
+              
+              return mix(
+                mix(mix(a, b, f.x), mix(c, d, f.x), f.y),
+                mix(mix(e, f2, f.x), mix(g, h, f.x), f.y),
+                f.z
+              );
+            }
+            
+            // FBM (Fractal Brownian Motion) for realistic terrain
+            float fbm(vec3 p) {
+              float value = 0.0;
+              float amplitude = 0.5;
+              float frequency = 1.0;
+              
+              for (int i = 0; i < 4; i++) {
+                value += amplitude * noise(p * frequency);
+                amplitude *= 0.5;
+                frequency *= 2.0;
+              }
+              
+              return value;
+            }
+            
+            void main() {
+              // Basic lighting
+              vec3 lightDir = normalize(vec3(0.0, 0.0, 1.0));
+              float lightIntensity = max(0.2, dot(vNormal, lightDir));
+              
+              // Create polar ice caps
+              float polarCap = smoothstep(0.85, 0.95, abs(vPosition.y / length(vPosition)));
+              
+              // Generate surface features
+              float elevation = fbm(vPosition * 3.0 + vec3(time * 0.1)); // Slow rotation
+              
+              // Olympus Mons - large volcano
+              float olympusDist = length(vec2(vUv.x - 0.4, vUv.y - 0.55) * 2.0);
+              float olympus = smoothstep(0.2, 0.5, olympusDist);
+              
+              // Valles Marineris - large canyon system
+              float vallesY = abs(vUv.y - 0.5) * 20.0;
+              float vallesX = mod(vUv.x + time * 0.01, 1.0);
+              float valles = smoothstep(0.0, 0.1, vallesY) * step(0.35, vallesX) * step(vallesX, 0.65);
+              
+              // Combine features
+              vec3 surfaceColor = mix(lowlandColor, baseColor, elevation);
+              surfaceColor = mix(surfaceColor, highlightColor, (1.0 - olympus) * 0.6);
+              surfaceColor = mix(surfaceColor, lowlandColor * 0.8, (1.0 - valles) * 0.3);
+              
+              // Add dust storms that move over time
+              float dustStorm = fbm(vec3(vUv * 10.0, time * 0.1));
+              surfaceColor = mix(surfaceColor, vec3(0.9, 0.7, 0.5), dustStorm * 0.15);
+              
+              // Mix in polar caps
+              surfaceColor = mix(surfaceColor, polarColor, polarCap);
+              
+              // Apply lighting
+              vec3 finalColor = surfaceColor * lightIntensity;
+              finalColor += emissiveColor * 0.15;
+              
+              // Add subtle atmospheric edge glow
+              float rim = 1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0)));
+              finalColor = mix(finalColor, vec3(0.9, 0.6, 0.5), pow(rim, 4.0) * 0.3);
+              
+              gl_FragColor = vec4(finalColor, 1.0);
+            }
+          `,
+        });
+      } else if (planet.name === "Venus" && planet.customShader) {
+        planetMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            time: { value: 0 },
+            resolution: { value: new THREE.Vector2(1024, 1024) },
+            baseColor: { value: new THREE.Color(0xf5e79b) },
+            cloudColor1: { value: new THREE.Color(0xf0d9a2) },
+            cloudColor2: { value: new THREE.Color(0xebd293) },
+            cloudColor3: { value: new THREE.Color(0xd1ba7d) },
+            emissiveColor: { value: new THREE.Color(0x3a2f1a) },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            void main() {
+              vUv = uv;
+              vNormal = normalize(normalMatrix * normal);
+              vPosition = position;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform float time;
+            uniform vec2 resolution;
+            uniform vec3 baseColor;
+            uniform vec3 cloudColor1;
+            uniform vec3 cloudColor2;
+            uniform vec3 cloudColor3;
+            uniform vec3 emissiveColor;
+            
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            float hash(vec2 p) {
+              return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+            
+            float noise(vec2 p) {
+              vec2 i = floor(p);
+              vec2 f = fract(p);
+              f = f * f * (3.0 - 2.0 * f);
+              
+              float a = hash(i);
+              float b = hash(i + vec2(1.0, 0.0));
+              float c = hash(i + vec2(0.0, 1.0));
+              float d = hash(i + vec2(1.0, 1.0));
+              
+              return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+            }
+            
+            float fbm(vec2 p) {
+              float value = 0.0;
+              float amplitude = 0.5;
+              float frequency = 1.0;
+              
+              for (int i = 0; i < 6; i++) {
+                value += amplitude * noise(p * frequency);
+                amplitude *= 0.5;
+                frequency *= 2.0;
+              }
+              
+              return value;
+            }
+            
+            void main() {
+              vec3 lightDir = normalize(vec3(0.0, 0.0, 1.0));
+              float light = max(0.2, dot(vNormal, lightDir));
+              
+              float lat = asin(vPosition.y / length(vPosition));
+              float lon = atan(vPosition.z, vPosition.x);
+              
+              vec2 cloudCoord1 = vec2(lon + time * 0.03, lat);
+              vec2 cloudCoord2 = vec2(lon - time * 0.015, lat + time * 0.02);
+              vec2 cloudCoord3 = vec2(lon + time * 0.02, lat - time * 0.01);
+              
+              float cloudPattern1 = fbm(cloudCoord1 * 2.0);
+              float cloudPattern2 = fbm(cloudCoord2 * 4.0 + vec2(100.0, 100.0));
+              float cloudPattern3 = fbm(cloudCoord3 * 6.0 + vec2(300.0, 200.0));
+              
+              float yBands = sin(lat * 10.0 + cloudPattern1 * 2.0) * 0.5 + 0.5;
+              
+              float vortex1 = length(vec2(lon, lat * 3.0) - vec2(0.5, 0.7)) * 2.0;
+              float vortex2 = length(vec2(lon + time * 0.02, lat * 2.0) - vec2(2.0, -0.5)) * 3.0;
+              
+              float vortexPattern1 = smoothstep(0.5, 1.5, vortex1);
+              float vortexPattern2 = smoothstep(0.4, 1.2, vortex2);
+              
+              float cloudDensity = cloudPattern1 * 0.5 + cloudPattern2 * 0.3 + cloudPattern3 * 0.2;
+              cloudDensity = cloudDensity * (0.8 + yBands * 0.4) * vortexPattern1 * vortexPattern2;
+              
+              vec3 cloudColor = mix(cloudColor1, cloudColor2, cloudPattern1);
+              cloudColor = mix(cloudColor, cloudColor3, cloudPattern2 * cloudPattern3);
+              
+              vec3 surfaceColor = mix(baseColor, cloudColor, cloudDensity);
+              
+              float equatorHighlight = pow(cos(lat), 4.0) * 0.1;
+              surfaceColor += vec3(equatorHighlight);
+              
+              float rimLight = pow(1.0 - max(0.0, dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0) * 0.3;
+              vec3 rimColor = mix(vec3(1.0, 0.95, 0.8), vec3(0.9, 0.7, 0.3), cloudDensity);
+              
+              vec3 finalColor = surfaceColor * light * (1.0 + rimLight * rimColor);
+              finalColor += emissiveColor * 0.2;
+              
+              gl_FragColor = vec4(finalColor, 1.0);
+            }
+          `
+        });
       } else {
         planetMaterial = new THREE.MeshStandardMaterial({
           color: planet.color,
@@ -1066,6 +1298,194 @@ const VoidVoyager = () => {
             atmosphereMaterial
           );
           planetMesh.add(atmosphere);
+        } else if (planet.name === "Mars") {
+          const atmosphereMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+              time: { value: 0 },
+            },
+            vertexShader: `
+              varying vec3 vNormal;
+              varying vec2 vUv;
+              
+              void main() {
+                vNormal = normalize(normalMatrix * normal);
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform float time;
+              varying vec3 vNormal;
+              varying vec2 vUv;
+              
+              void main() {
+                // Martian atmosphere is very thin
+                float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 2.0);
+                
+                // Create subtle dust storm patterns
+                float storm = sin(vUv.x * 20.0 + time * 0.3) * sin(vUv.y * 20.0 + time * 0.2) * 0.5 + 0.5;
+                float stormPattern = sin(vUv.x * 15.0 - time * 0.1) * sin(vUv.y * 15.0 + time * 0.2) * 0.5 + 0.5;
+                
+                // Martian orange-pink atmospheric color
+                vec3 atmosphereColor = vec3(0.9, 0.6, 0.5);
+                vec3 stormColor = vec3(0.8, 0.7, 0.5);
+                
+                vec3 finalColor = mix(atmosphereColor, stormColor, storm * stormPattern * 0.3);
+                
+                // Very thin atmosphere - almost transparent
+                float alpha = intensity * 0.3 * storm;
+                
+                gl_FragColor = vec4(finalColor, alpha);
+              }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            side: THREE.BackSide,
+          });
+          const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+          planetMesh.add(atmosphere);
+        } else if (planet.name === "Venus") {
+          const atmosphereMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+              time: { value: 0 },
+            },
+            vertexShader: `
+              varying vec3 vNormal;
+              varying vec2 vUv;
+              
+              void main() {
+                vNormal = normalize(normalMatrix * normal);
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform float time;
+              varying vec3 vNormal;
+              varying vec2 vUv;
+              
+              float hash(vec2 p) {
+                return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+              }
+              
+              float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                
+                float a = hash(i);
+                float b = hash(i + vec2(1.0, 0.0));
+                float c = hash(i + vec2(0.0, 1.0));
+                float d = hash(i + vec2(1.0, 1.0));
+                
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+              }
+              
+              float fbm(vec2 p) {
+                float value = 0.0;
+                float amplitude = 0.5;
+                float frequency = 1.0;
+                
+                for (int i = 0; i < 4; i++) {
+                  value += amplitude * noise(p * frequency);
+                  amplitude *= 0.5;
+                  frequency *= 2.0;
+                }
+                
+                return value;
+              }
+              
+              void main() {
+                float intensity = pow(0.7 - dot(vNormal, vec3(0, 0, 1.0)), 1.7);
+                
+                vec2 cloudCoord = vUv * 4.0 + vec2(time * 0.02, time * 0.01);
+                float cloudPattern = fbm(cloudCoord);
+                
+                vec2 swirls = vUv * 8.0 - vec2(time * 0.01, 0.0);
+                float swirlPattern = fbm(swirls) * 0.5 + 0.5;
+                
+                float patternMix = cloudPattern * swirlPattern;
+                
+                vec3 yellowColor = vec3(0.95, 0.85, 0.55);
+                vec3 orangeColor = vec3(0.9, 0.7, 0.4);
+                
+                vec3 atmosphereColor = mix(yellowColor, orangeColor, patternMix);
+                
+                float pulse = 0.95 + sin(time * 0.5) * 0.05;
+                float alpha = intensity * (0.6 + patternMix * 0.2) * pulse;
+                
+                gl_FragColor = vec4(atmosphereColor, alpha);
+              }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            side: THREE.BackSide,
+          });
+          
+          const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+          planetMesh.add(atmosphere);
+          
+          const outerAtmosphereGeometry = new THREE.SphereGeometry(
+            planet.radius * 1.18, 
+            planetSegments, 
+            planetSegments
+          );
+          
+          const outerAtmosphereMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+              time: { value: 0 }
+            },
+            vertexShader: `
+              varying vec3 vNormal;
+              varying vec2 vUv;
+              
+              void main() {
+                vNormal = normalize(normalMatrix * normal);
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform float time;
+              varying vec3 vNormal;
+              varying vec2 vUv;
+              
+              float hash(vec2 p) {
+                return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+              }
+              
+              float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                
+                float a = hash(i);
+                float b = hash(i + vec2(1.0, 0.0));
+                float c = hash(i + vec2(0.0, 1.0));
+                float d = hash(i + vec2(1.0, 1.0));
+                
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+              }
+              
+              void main() {
+                float intensity = pow(0.4 - dot(vNormal, vec3(0, 0, 1.0)), 3.0);
+                
+                vec2 cloudCoord = vUv * 3.0 + vec2(time * 0.01, 0.0);
+                float cloudPattern = noise(cloudCoord) * 0.5 + 0.5;
+                
+                vec3 yellowColor = vec3(0.92, 0.8, 0.5);
+                float alpha = intensity * cloudPattern * 0.35;
+                
+                gl_FragColor = vec4(yellowColor, alpha);
+              }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            side: THREE.BackSide,
+          });
+          
+          const outerAtmosphere = new THREE.Mesh(outerAtmosphereGeometry, outerAtmosphereMaterial);
+          planetMesh.add(outerAtmosphere);
         } else if (!isLowPerformance) {
           const atmosphereMaterial = new THREE.ShaderMaterial({
             uniforms: {
@@ -1584,557 +2004,6 @@ const VoidVoyager = () => {
 
     createStarField();
 
-    if (!isLowPerformance) {
-      const createNebula = () => {
-        const nebulaMaterial = new THREE.ShaderMaterial({
-          uniforms: {
-            time: { value: 0 },
-          },
-          vertexShader: `
-            varying vec3 vPosition;
-            
-            void main() {
-              vPosition = position;
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-          `,
-          fragmentShader: `
-            uniform float time;
-            varying vec3 vPosition;
-            
-            float noise(vec3 p) {
-              return fract(sin(dot(p, vec3(12.9898, 78.233, 45.5432))) * 43758.5453);
-            }
-            
-            void main() {
-              float dist = length(vPosition);
-              
-              float n = noise(vPosition * 0.01 + time * 0.0001);
-              float n2 = noise(vPosition * 0.02 - time * 0.0002);
-              
-              vec3 color1 = vec3(0.1, 0.2, 0.5);
-              vec3 color2 = vec3(0.5, 0.1, 0.5);
-              vec3 color3 = vec3(0.1, 0.1, 0.3);
-              
-              vec3 finalColor = mix(color1, color2, n);
-              finalColor = mix(finalColor, color3, n2);
-              
-              float alpha = smoothstep(1000.0, 500.0, dist) * 0.07;
-              
-              gl_FragColor = vec4(finalColor, alpha);
-            }
-          `,
-          transparent: true,
-          side: THREE.BackSide,
-          blending: THREE.AdditiveBlending,
-        });
-
-        const nebulaGeometry = new THREE.SphereGeometry(1000, 32, 32);
-        const nebula = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
-        scene.add(nebula);
-      };
-
-      const createGalaxies = () => {
-        // Container for all galaxies
-        const galaxiesGroup = new THREE.Group();
-        scene.add(galaxiesGroup);
-      
-        // Create a galaxy texture for better visual quality
-        const createGalaxyTexture = (type, colors) => {
-          const canvas = document.createElement('canvas');
-          canvas.width = 512;
-          canvas.height = 512;
-          const ctx = canvas.getContext('2d');
-          
-          // Clear canvas
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
-          const centerX = canvas.width / 2;
-          const centerY = canvas.height / 2;
-          
-          if (type === 'spiral') {
-            // Create central bulge glow
-            const bulgeGradient = ctx.createRadialGradient(
-              centerX, centerY, 0, 
-              centerX, centerY, canvas.width * 0.2
-            );
-            bulgeGradient.addColorStop(0, colors.coreCenter || '#fffbf0');
-            bulgeGradient.addColorStop(0.5, colors.core || '#fff0d0');
-            bulgeGradient.addColorStop(1, 'rgba(255, 240, 220, 0)');
-            
-            ctx.fillStyle = bulgeGradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Create spiral arms
-            const armCount = colors.armCount || 2;
-            const rotation = colors.rotation || 0;
-            
-            for (let a = 0; a < armCount; a++) {
-              const armAngle = (a / armCount) * Math.PI * 2 + rotation;
-              const armWidth = colors.armWidth || 0.15;
-              
-              // Create each arm with multiple layers
-              for (let r = 0.1; r < 1.0; r += 0.005) {
-                const angle = armAngle + r * colors.spiralFactor;
-                const x = centerX + Math.cos(angle) * r * canvas.width * 0.45;
-                const y = centerY + Math.sin(angle) * r * canvas.width * 0.45;
-                
-                // Arm width increases with distance
-                const size = 2 + r * 20 * armWidth;
-                
-                // Color shifts from yellowish in center to blueish in outer regions
-                const armOpacity = (1 - r*0.5) * 0.2 * (1 - Math.abs(Math.sin(r * 8)) * 0.15);
-                
-                // Create bright arm regions
-                ctx.fillStyle = `rgba(${Math.floor(colors.armR || 180)}, ${Math.floor(colors.armG || 200)}, ${Math.floor(colors.armB || 255)}, ${armOpacity})`;
-                ctx.beginPath();
-                ctx.arc(x, y, size, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Add dust lanes (darker regions)
-                if (r > 0.15) {
-                  const dustAngle = angle + 0.2;
-                  const dustX = centerX + Math.cos(dustAngle) * (r-0.02) * canvas.width * 0.45;
-                  const dustY = centerY + Math.sin(dustAngle) * (r-0.02) * canvas.width * 0.45;
-                  
-                  ctx.fillStyle = `rgba(60, 40, 15, ${armOpacity * 0.7})`;
-                  ctx.beginPath();
-                  ctx.arc(dustX, dustY, size * 0.7, 0, Math.PI * 2);
-                  ctx.fill();
-                }
-              }
-            }
-            
-            // Add overall diffuse glow
-            const glowGradient = ctx.createRadialGradient(
-              centerX, centerY, canvas.width * 0.1, 
-              centerX, centerY, canvas.width * 0.5
-            );
-            glowGradient.addColorStop(0, `rgba(${colors.glowR || 255}, ${colors.glowG || 240}, ${colors.glowB || 230}, 0.3)`);
-            glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            
-            ctx.globalCompositeOperation = 'screen';
-            ctx.fillStyle = glowGradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-          } else if (type === 'elliptical') {
-            // Create smooth elliptical gradient
-            const gradient = ctx.createRadialGradient(
-              centerX, centerY, 0, 
-              centerX, centerY, canvas.width * 0.5
-            );
-            gradient.addColorStop(0, colors.core || '#fff8e0');
-            gradient.addColorStop(0.3, colors.mid || '#ffedcc');
-            gradient.addColorStop(0.7, colors.outer || 'rgba(255, 210, 180, 0.5)');
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            
-            // Create basic elliptical shape
-            ctx.save();
-            ctx.translate(centerX, centerY);
-            ctx.scale(colors.axisRatio?.x || 1.0, colors.axisRatio?.y || 0.7);
-            ctx.beginPath();
-            ctx.arc(0, 0, canvas.width * 0.4, 0, Math.PI * 2);
-            ctx.restore();
-            
-            ctx.fillStyle = gradient;
-            ctx.fill();
-      
-            // Add random bright spots (giant stars)
-            const starCount = 20;
-            for (let i = 0; i < starCount; i++) {
-              const angle = Math.random() * Math.PI * 2;
-              const dist = Math.random() * Math.random() * canvas.width * 0.4; // More toward center
-              
-              const x = centerX + Math.cos(angle) * dist * (colors.axisRatio?.x || 1.0);
-              const y = centerY + Math.sin(angle) * dist * (colors.axisRatio?.y || 0.7);
-              const size = 1 + Math.random() * 2;
-              
-              ctx.fillStyle = 'rgba(255, 250, 240, 0.5)';
-              ctx.beginPath();
-              ctx.arc(x, y, size, 0, Math.PI * 2);
-              ctx.fill();
-            }
-          }
-          
-          // Add bright stars/clusters
-          const starCount = type === 'spiral' ? 50 : 30;
-          for (let i = 0; i < starCount; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = Math.random() * canvas.width * 0.45;
-            
-            const x = centerX + Math.cos(angle) * dist;
-            const y = centerY + Math.sin(angle) * dist;
-            const size = 1 + Math.random() * 3;
-            
-            const brightness = 0.3 + Math.random() * 0.7;
-            ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          
-          return new THREE.CanvasTexture(canvas);
-        };
-      
-        // REALISTIC GALAXY WITH IMAGE TEXTURE AND PARTICLES
-        const createRealisticGalaxy = (position, rotation, size, options) => {
-          const config = {
-            type: options.type || 'spiral',
-            colors: options.colors || {},
-            particles: {
-              count: isLowPerformance ? (options.type === 'spiral' ? 8000 : 6000) : 
-                                        (options.type === 'spiral' ? 25000 : 18000)
-            },
-            ...options
-          };
-          
-          // Create base texture
-          const galaxyTexture = createGalaxyTexture(config.type, config.colors);
-          
-          // Create main galaxy disk/shape
-          const galaxyMaterial = new THREE.MeshBasicMaterial({
-            map: galaxyTexture,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            side: THREE.DoubleSide
-          });
-          
-          // For spiral galaxies, create a flat disk
-          // For ellipticals, create a 3D shape
-          let galaxyGeometry;
-          
-          if (config.type === 'spiral') {
-            galaxyGeometry = new THREE.PlaneGeometry(size * 2, size * 2);
-          } else {
-            galaxyGeometry = new THREE.SphereGeometry(size, 32, 32);
-            
-            // Flatten the sphere to create elliptical shape
-            const axisRatio = config.colors.axisRatio || { x: 1.0, y: 0.7, z: 0.6 };
-            const positions = galaxyGeometry.attributes.position;
-            
-            for (let i = 0; i < positions.count; i++) {
-              const x = positions.getX(i);
-              const y = positions.getY(i);
-              const z = positions.getZ(i);
-              
-              positions.setX(i, x * axisRatio.x);
-              positions.setY(i, y * axisRatio.y);
-              positions.setZ(i, z * axisRatio.z);
-            }
-            
-            galaxyGeometry.computeVertexNormals();
-          }
-          
-          const galaxyDisk = new THREE.Mesh(galaxyGeometry, galaxyMaterial);
-          
-          // Create particle system for stars
-          const particleMaterial = new THREE.PointsMaterial({
-            size: config.type === 'spiral' ? 1.5 : 1.2,
-            map: createStarTexture(),
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            vertexColors: true
-          });
-          
-          const particleGeometry = new THREE.BufferGeometry();
-          const particleCount = config.particles.count;
-          const particlePositions = new Float32Array(particleCount * 3);
-          const particleColors = new Float32Array(particleCount * 3);
-          
-          // Different distribution for spiral vs elliptical
-          for (let i = 0; i < particleCount; i++) {
-            let x, y, z;
-            
-            if (config.type === 'spiral') {
-              // Logarithmic spiral distribution
-              const t = Math.random() * Math.PI * 2;
-              let r;
-              
-              // 80% of particles follow spiral arms
-              if (Math.random() < 0.8) {
-                // Choose a spiral arm
-                const arm = Math.floor(Math.random() * (config.colors.armCount || 2));
-                const armAngle = (arm / (config.colors.armCount || 2)) * Math.PI * 2;
-                
-                // Radius with exponential distribution (more toward center)
-                r = Math.pow(Math.random(), 2) * size;
-                
-                // Angle follows spiral pattern
-                const angle = armAngle + r * (config.colors.spiralFactor || 5) + 
-                               (Math.random() * 0.6 - 0.3); // Some spread
-                
-                x = Math.cos(angle) * r;
-                y = (Math.random() * 0.1 - 0.05) * r; // Thin disk
-                z = Math.sin(angle) * r;
-                
-                // Colors - blue in arms, yellow in center
-                const distFromCenter = r / size;
-                if (distFromCenter < 0.2) {
-                  // Core - yellowish
-                  particleColors[i * 3] = 1.0;     // R
-                  particleColors[i * 3 + 1] = 0.9; // G
-                  particleColors[i * 3 + 2] = 0.7; // B
-                } else {
-                  // Arms - blueish with variation
-                  particleColors[i * 3] = 0.7 + Math.random() * 0.3;     // R
-                  particleColors[i * 3 + 1] = 0.8 + Math.random() * 0.2; // G
-                  particleColors[i * 3 + 2] = 0.9 + Math.random() * 0.1; // B
-                }
-              } else {
-                // Random disk distribution for non-arm stars
-                const angle = Math.random() * Math.PI * 2;
-                r = Math.random() * size;
-                
-                x = Math.cos(angle) * r;
-                y = (Math.random() * 0.2 - 0.1) * r; // Slightly thicker
-                z = Math.sin(angle) * r;
-                
-                // Colors - general disk stars, mostly white/yellow
-                particleColors[i * 3] = 0.9;     // R
-                particleColors[i * 3 + 1] = 0.9; // G
-                particleColors[i * 3 + 2] = 0.8; // B
-              }
-              
-            } else {
-              // Elliptical galaxy - 3D distribution
-              // Use r^(1/4) distribution (de Vaucouleurs profile)
-              const r = size * Math.pow(Math.random(), 0.25);
-              
-              // Random direction in 3D
-              const phi = Math.acos(2 * Math.random() - 1);
-              const theta = Math.random() * Math.PI * 2;
-              
-              // Apply ellipsoid shape
-              const axisRatio = config.colors.axisRatio || { x: 1.0, y: 0.7, z: 0.6 };
-              x = r * Math.sin(phi) * Math.cos(theta) * axisRatio.x;
-              y = r * Math.sin(phi) * Math.sin(theta) * axisRatio.y;
-              z = r * Math.cos(phi) * axisRatio.z;
-              
-              // Colors - yellowish/reddish for ellipticals
-              const distFromCenter = r / size;
-              particleColors[i * 3] = 1.0;     // R
-              particleColors[i * 3 + 1] = 0.9 - distFromCenter * 0.2; // G
-              particleColors[i * 3 + 2] = 0.7 - distFromCenter * 0.3; // B
-            }
-            
-            particlePositions[i * 3] = x;
-            particlePositions[i * 3 + 1] = y;
-            particlePositions[i * 3 + 2] = z;
-          }
-          
-          particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-          particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
-          
-          const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
-          
-          // Create container for the galaxy
-          const galaxyContainer = new THREE.Group();
-          galaxyContainer.add(galaxyDisk);
-          galaxyContainer.add(particleSystem);
-          
-          // Add subtle ambient glow
-          if (!isLowPerformance) {
-            const glowMaterial = new THREE.SpriteMaterial({
-              map: createGlowTexture(config.type, config.colors),
-              transparent: true,
-              blending: THREE.AdditiveBlending,
-              depthWrite: false,
-            });
-            
-            const glow = new THREE.Sprite(glowMaterial);
-            glow.scale.set(size * 3, size * 3, 1);
-            galaxyContainer.add(glow);
-          }
-          
-          // Position and rotate
-          galaxyContainer.position.copy(position);
-          galaxyContainer.rotation.set(rotation.x, rotation.y, rotation.z);
-          
-          galaxiesGroup.add(galaxyContainer);
-          
-          return {
-            container: galaxyContainer,
-            disk: galaxyDisk,
-            particles: particleSystem
-          };
-        };
-        
-        // Create star point texture
-        function createStarTexture() {
-          const canvas = document.createElement('canvas');
-          canvas.width = 32;
-          canvas.height = 32;
-          const ctx = canvas.getContext('2d');
-          
-          // Clear canvas
-          ctx.clearRect(0, 0, 32, 32);
-          
-          // Create radial gradient for star
-          const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-          gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
-          gradient.addColorStop(0.1, 'rgba(255, 255, 255, 0.8)');
-          gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
-          gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-          
-          ctx.fillStyle = gradient;
-          ctx.fillRect(0, 0, 32, 32);
-          
-          return new THREE.CanvasTexture(canvas);
-        }
-        
-        // Create glow texture
-        function createGlowTexture(type, colors) {
-          const canvas = document.createElement('canvas');
-          canvas.width = 256;
-          canvas.height = 256;
-          const ctx = canvas.getContext('2d');
-          
-          // Clear canvas
-          ctx.clearRect(0, 0, 256, 256);
-          
-          // Create glow based on galaxy type
-          const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-          
-          if (type === 'spiral') {
-            const r = colors.glowR || 100;
-            const g = colors.glowG || 120;
-            const b = colors.glowB || 150;
-            
-            gradient.addColorStop(0, `rgba(${r+50}, ${g+50}, ${b+30}, 0.3)`);
-            gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.1)`);
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          } else {
-            gradient.addColorStop(0, 'rgba(255, 240, 220, 0.2)');
-            gradient.addColorStop(0.5, 'rgba(255, 220, 180, 0.1)');
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          }
-          
-          ctx.fillStyle = gradient;
-          ctx.fillRect(0, 0, 256, 256);
-          
-          return new THREE.CanvasTexture(canvas);
-        }
-      
-        // Create the galaxies
-        const galaxies = [];
-        
-        galaxies.push(createRealisticGalaxy(
-          new THREE.Vector3(-2500, 1500, -4800),  // Much farther position
-          new THREE.Vector3(Math.PI / 4, Math.PI / 6, 0),
-          120,  // Larger size to remain visible at distance
-          {
-            type: 'spiral',
-            colors: {
-              coreCenter: '#fffaf0',
-              core: '#fff8d0',
-              armR: 180, armG: 210, armB: 255,
-              glowR: 100, glowG: 130, glowB: 200,
-              armCount: 2,
-              spiralFactor: 4,
-              armWidth: 0.2,
-              rotation: 0.5
-            }
-          }
-        ));
-        
-        // Andromeda-like spiral - FAR AWAY
-        galaxies.push(createRealisticGalaxy(
-          new THREE.Vector3(3200, -800, -6000),  // Much farther position
-          new THREE.Vector3(-Math.PI / 5, Math.PI / 3, Math.PI / 7),
-          150,  // Larger size to remain visible
-          {
-            type: 'spiral',
-            colors: {
-              coreCenter: '#fffae0',
-              core: '#fff0c0',
-              armR: 240, armG: 210, armB: 180,
-              glowR: 180, glowG: 150, glowB: 120,
-              armCount: 2,
-              spiralFactor: 3.5,
-              armWidth: 0.25,
-              rotation: 0
-            }
-          }
-        ));
-        
-        // M87-like giant elliptical - FAR AWAY
-        galaxies.push(createRealisticGalaxy(
-          new THREE.Vector3(-3600, -1600, -7500),  // Much farther position
-          new THREE.Vector3(Math.PI / 6, -Math.PI / 8, 0),
-          180,  // Larger size to remain visible
-          {
-            type: 'elliptical',
-            colors: {
-              core: '#fff8e0',
-              mid: '#ffe8c0',
-              outer: 'rgba(255, 200, 150, 0.3)',
-              axisRatio: { x: 1.0, y: 0.8, z: 0.7 }
-            }
-          }
-        ));
-        
-        // Magellanic-like small irregular spiral - FAR AWAY
-        galaxies.push(createRealisticGalaxy(
-          new THREE.Vector3(1800, 2400, -5600),  // Much farther position
-          new THREE.Vector3(-Math.PI / 3, -Math.PI / 8, Math.PI / 5),
-          90,  // Larger size to remain visible
-          {
-            type: 'spiral',
-            colors: {
-              coreCenter: '#f0f8ff',
-              core: '#e0f0ff',
-              armR: 150, armG: 180, armB: 255,
-              glowR: 80, glowG: 120, glowB: 220,
-              armCount: 1,
-              spiralFactor: 2.5,
-              armWidth: 0.4,
-              rotation: 1.2
-            }
-          }
-        ));
-        
-        // Animate galaxies - simple rotation
-        const animateGalaxies = (delta) => {
-          galaxies.forEach((galaxy, index) => {
-            if (galaxy.disk) {
-              // Each galaxy rotates at a different speed
-              const rotationSpeed = 0.05 / (index + 5);
-              galaxy.container.rotation.z += rotationSpeed * delta;
-              
-              // For spiral galaxies, rotate the particles slightly differently for realism
-              if (galaxy.particles && index % 2 === 0) {
-                galaxy.particles.rotation.z += rotationSpeed * delta * 0.7;
-              }
-            }
-          });
-        };
-        
-        // Store the animation function
-        sceneRef.current.userData.animateGalaxies = animateGalaxies;
-        
-        return galaxies;
-      };
-
-      createNebula();
-      const galaxies = createGalaxies();
-
-// Add galaxies to animation update
-const animateGalaxies = (delta) => {
-  if (galaxies) {
-    galaxies.forEach(galaxy => {
-      if (galaxy.material && galaxy.material.uniforms && galaxy.material.uniforms.time) {
-        galaxy.material.uniforms.time.value += delta;
-      }
-    });
-  }
-};
-
-// Store the animation function
-sceneRef.current.userData.animateGalaxies = animateGalaxies;
-    }
-
     const createPlanetLabels = () => {
       Object.entries(planets).forEach(([name, planet]) => {
         const canvas = document.createElement("canvas");
@@ -2288,6 +2157,26 @@ sceneRef.current.userData.animateGalaxies = animateGalaxies;
         });
       }
 
+      if (planets["Mars"] && planets["Mars"].mesh) {
+        const marsMesh = planets["Mars"].mesh;
+        if (marsMesh.material && marsMesh.material.uniforms && marsMesh.material.uniforms.time) {
+          marsMesh.material.uniforms.time.value += delta;
+        }
+      }
+
+      if (planets["Venus"] && planets["Venus"].mesh) {
+        const venusMesh = planets["Venus"].mesh;
+        if (venusMesh.material && venusMesh.material.uniforms && venusMesh.material.uniforms.time) {
+          venusMesh.material.uniforms.time.value += delta;
+        }
+        
+        venusMesh.children.forEach((child) => {
+          if (child.material && child.material.uniforms && child.material.uniforms.time) {
+            child.material.uniforms.time.value += delta;
+          }
+        });
+      }
+
       Object.values(planetsRef.current).forEach((planet) => {
         if (
           planet.mesh &&
@@ -2320,8 +2209,6 @@ sceneRef.current.userData.animateGalaxies = animateGalaxies;
           }
         });
       }
-
-      
 
       if (sceneRef.current && sceneRef.current.userData.animateGalaxies) {
         sceneRef.current.userData.animateGalaxies(delta);
