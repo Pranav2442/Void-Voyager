@@ -195,7 +195,7 @@ const VoidVoyager = () => {
       fov,
       window.innerWidth / window.innerHeight,
       0.1,
-      5000
+      10000
     );
     camera.position.set(0, 30, 100);
     cameraRef.current = camera;
@@ -1634,7 +1634,505 @@ const VoidVoyager = () => {
         scene.add(nebula);
       };
 
+      const createGalaxies = () => {
+        // Container for all galaxies
+        const galaxiesGroup = new THREE.Group();
+        scene.add(galaxiesGroup);
+      
+        // Create a galaxy texture for better visual quality
+        const createGalaxyTexture = (type, colors) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 512;
+          canvas.height = 512;
+          const ctx = canvas.getContext('2d');
+          
+          // Clear canvas
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          const centerX = canvas.width / 2;
+          const centerY = canvas.height / 2;
+          
+          if (type === 'spiral') {
+            // Create central bulge glow
+            const bulgeGradient = ctx.createRadialGradient(
+              centerX, centerY, 0, 
+              centerX, centerY, canvas.width * 0.2
+            );
+            bulgeGradient.addColorStop(0, colors.coreCenter || '#fffbf0');
+            bulgeGradient.addColorStop(0.5, colors.core || '#fff0d0');
+            bulgeGradient.addColorStop(1, 'rgba(255, 240, 220, 0)');
+            
+            ctx.fillStyle = bulgeGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Create spiral arms
+            const armCount = colors.armCount || 2;
+            const rotation = colors.rotation || 0;
+            
+            for (let a = 0; a < armCount; a++) {
+              const armAngle = (a / armCount) * Math.PI * 2 + rotation;
+              const armWidth = colors.armWidth || 0.15;
+              
+              // Create each arm with multiple layers
+              for (let r = 0.1; r < 1.0; r += 0.005) {
+                const angle = armAngle + r * colors.spiralFactor;
+                const x = centerX + Math.cos(angle) * r * canvas.width * 0.45;
+                const y = centerY + Math.sin(angle) * r * canvas.width * 0.45;
+                
+                // Arm width increases with distance
+                const size = 2 + r * 20 * armWidth;
+                
+                // Color shifts from yellowish in center to blueish in outer regions
+                const armOpacity = (1 - r*0.5) * 0.2 * (1 - Math.abs(Math.sin(r * 8)) * 0.15);
+                
+                // Create bright arm regions
+                ctx.fillStyle = `rgba(${Math.floor(colors.armR || 180)}, ${Math.floor(colors.armG || 200)}, ${Math.floor(colors.armB || 255)}, ${armOpacity})`;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add dust lanes (darker regions)
+                if (r > 0.15) {
+                  const dustAngle = angle + 0.2;
+                  const dustX = centerX + Math.cos(dustAngle) * (r-0.02) * canvas.width * 0.45;
+                  const dustY = centerY + Math.sin(dustAngle) * (r-0.02) * canvas.width * 0.45;
+                  
+                  ctx.fillStyle = `rgba(60, 40, 15, ${armOpacity * 0.7})`;
+                  ctx.beginPath();
+                  ctx.arc(dustX, dustY, size * 0.7, 0, Math.PI * 2);
+                  ctx.fill();
+                }
+              }
+            }
+            
+            // Add overall diffuse glow
+            const glowGradient = ctx.createRadialGradient(
+              centerX, centerY, canvas.width * 0.1, 
+              centerX, centerY, canvas.width * 0.5
+            );
+            glowGradient.addColorStop(0, `rgba(${colors.glowR || 255}, ${colors.glowG || 240}, ${colors.glowB || 230}, 0.3)`);
+            glowGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            
+            ctx.globalCompositeOperation = 'screen';
+            ctx.fillStyle = glowGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+          } else if (type === 'elliptical') {
+            // Create smooth elliptical gradient
+            const gradient = ctx.createRadialGradient(
+              centerX, centerY, 0, 
+              centerX, centerY, canvas.width * 0.5
+            );
+            gradient.addColorStop(0, colors.core || '#fff8e0');
+            gradient.addColorStop(0.3, colors.mid || '#ffedcc');
+            gradient.addColorStop(0.7, colors.outer || 'rgba(255, 210, 180, 0.5)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            
+            // Create basic elliptical shape
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.scale(colors.axisRatio?.x || 1.0, colors.axisRatio?.y || 0.7);
+            ctx.beginPath();
+            ctx.arc(0, 0, canvas.width * 0.4, 0, Math.PI * 2);
+            ctx.restore();
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+      
+            // Add random bright spots (giant stars)
+            const starCount = 20;
+            for (let i = 0; i < starCount; i++) {
+              const angle = Math.random() * Math.PI * 2;
+              const dist = Math.random() * Math.random() * canvas.width * 0.4; // More toward center
+              
+              const x = centerX + Math.cos(angle) * dist * (colors.axisRatio?.x || 1.0);
+              const y = centerY + Math.sin(angle) * dist * (colors.axisRatio?.y || 0.7);
+              const size = 1 + Math.random() * 2;
+              
+              ctx.fillStyle = 'rgba(255, 250, 240, 0.5)';
+              ctx.beginPath();
+              ctx.arc(x, y, size, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          
+          // Add bright stars/clusters
+          const starCount = type === 'spiral' ? 50 : 30;
+          for (let i = 0; i < starCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * canvas.width * 0.45;
+            
+            const x = centerX + Math.cos(angle) * dist;
+            const y = centerY + Math.sin(angle) * dist;
+            const size = 1 + Math.random() * 3;
+            
+            const brightness = 0.3 + Math.random() * 0.7;
+            ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          
+          return new THREE.CanvasTexture(canvas);
+        };
+      
+        // REALISTIC GALAXY WITH IMAGE TEXTURE AND PARTICLES
+        const createRealisticGalaxy = (position, rotation, size, options) => {
+          const config = {
+            type: options.type || 'spiral',
+            colors: options.colors || {},
+            particles: {
+              count: isLowPerformance ? (options.type === 'spiral' ? 8000 : 6000) : 
+                                        (options.type === 'spiral' ? 25000 : 18000)
+            },
+            ...options
+          };
+          
+          // Create base texture
+          const galaxyTexture = createGalaxyTexture(config.type, config.colors);
+          
+          // Create main galaxy disk/shape
+          const galaxyMaterial = new THREE.MeshBasicMaterial({
+            map: galaxyTexture,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide
+          });
+          
+          // For spiral galaxies, create a flat disk
+          // For ellipticals, create a 3D shape
+          let galaxyGeometry;
+          
+          if (config.type === 'spiral') {
+            galaxyGeometry = new THREE.PlaneGeometry(size * 2, size * 2);
+          } else {
+            galaxyGeometry = new THREE.SphereGeometry(size, 32, 32);
+            
+            // Flatten the sphere to create elliptical shape
+            const axisRatio = config.colors.axisRatio || { x: 1.0, y: 0.7, z: 0.6 };
+            const positions = galaxyGeometry.attributes.position;
+            
+            for (let i = 0; i < positions.count; i++) {
+              const x = positions.getX(i);
+              const y = positions.getY(i);
+              const z = positions.getZ(i);
+              
+              positions.setX(i, x * axisRatio.x);
+              positions.setY(i, y * axisRatio.y);
+              positions.setZ(i, z * axisRatio.z);
+            }
+            
+            galaxyGeometry.computeVertexNormals();
+          }
+          
+          const galaxyDisk = new THREE.Mesh(galaxyGeometry, galaxyMaterial);
+          
+          // Create particle system for stars
+          const particleMaterial = new THREE.PointsMaterial({
+            size: config.type === 'spiral' ? 1.5 : 1.2,
+            map: createStarTexture(),
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            vertexColors: true
+          });
+          
+          const particleGeometry = new THREE.BufferGeometry();
+          const particleCount = config.particles.count;
+          const particlePositions = new Float32Array(particleCount * 3);
+          const particleColors = new Float32Array(particleCount * 3);
+          
+          // Different distribution for spiral vs elliptical
+          for (let i = 0; i < particleCount; i++) {
+            let x, y, z;
+            
+            if (config.type === 'spiral') {
+              // Logarithmic spiral distribution
+              const t = Math.random() * Math.PI * 2;
+              let r;
+              
+              // 80% of particles follow spiral arms
+              if (Math.random() < 0.8) {
+                // Choose a spiral arm
+                const arm = Math.floor(Math.random() * (config.colors.armCount || 2));
+                const armAngle = (arm / (config.colors.armCount || 2)) * Math.PI * 2;
+                
+                // Radius with exponential distribution (more toward center)
+                r = Math.pow(Math.random(), 2) * size;
+                
+                // Angle follows spiral pattern
+                const angle = armAngle + r * (config.colors.spiralFactor || 5) + 
+                               (Math.random() * 0.6 - 0.3); // Some spread
+                
+                x = Math.cos(angle) * r;
+                y = (Math.random() * 0.1 - 0.05) * r; // Thin disk
+                z = Math.sin(angle) * r;
+                
+                // Colors - blue in arms, yellow in center
+                const distFromCenter = r / size;
+                if (distFromCenter < 0.2) {
+                  // Core - yellowish
+                  particleColors[i * 3] = 1.0;     // R
+                  particleColors[i * 3 + 1] = 0.9; // G
+                  particleColors[i * 3 + 2] = 0.7; // B
+                } else {
+                  // Arms - blueish with variation
+                  particleColors[i * 3] = 0.7 + Math.random() * 0.3;     // R
+                  particleColors[i * 3 + 1] = 0.8 + Math.random() * 0.2; // G
+                  particleColors[i * 3 + 2] = 0.9 + Math.random() * 0.1; // B
+                }
+              } else {
+                // Random disk distribution for non-arm stars
+                const angle = Math.random() * Math.PI * 2;
+                r = Math.random() * size;
+                
+                x = Math.cos(angle) * r;
+                y = (Math.random() * 0.2 - 0.1) * r; // Slightly thicker
+                z = Math.sin(angle) * r;
+                
+                // Colors - general disk stars, mostly white/yellow
+                particleColors[i * 3] = 0.9;     // R
+                particleColors[i * 3 + 1] = 0.9; // G
+                particleColors[i * 3 + 2] = 0.8; // B
+              }
+              
+            } else {
+              // Elliptical galaxy - 3D distribution
+              // Use r^(1/4) distribution (de Vaucouleurs profile)
+              const r = size * Math.pow(Math.random(), 0.25);
+              
+              // Random direction in 3D
+              const phi = Math.acos(2 * Math.random() - 1);
+              const theta = Math.random() * Math.PI * 2;
+              
+              // Apply ellipsoid shape
+              const axisRatio = config.colors.axisRatio || { x: 1.0, y: 0.7, z: 0.6 };
+              x = r * Math.sin(phi) * Math.cos(theta) * axisRatio.x;
+              y = r * Math.sin(phi) * Math.sin(theta) * axisRatio.y;
+              z = r * Math.cos(phi) * axisRatio.z;
+              
+              // Colors - yellowish/reddish for ellipticals
+              const distFromCenter = r / size;
+              particleColors[i * 3] = 1.0;     // R
+              particleColors[i * 3 + 1] = 0.9 - distFromCenter * 0.2; // G
+              particleColors[i * 3 + 2] = 0.7 - distFromCenter * 0.3; // B
+            }
+            
+            particlePositions[i * 3] = x;
+            particlePositions[i * 3 + 1] = y;
+            particlePositions[i * 3 + 2] = z;
+          }
+          
+          particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+          particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+          
+          const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+          
+          // Create container for the galaxy
+          const galaxyContainer = new THREE.Group();
+          galaxyContainer.add(galaxyDisk);
+          galaxyContainer.add(particleSystem);
+          
+          // Add subtle ambient glow
+          if (!isLowPerformance) {
+            const glowMaterial = new THREE.SpriteMaterial({
+              map: createGlowTexture(config.type, config.colors),
+              transparent: true,
+              blending: THREE.AdditiveBlending,
+              depthWrite: false,
+            });
+            
+            const glow = new THREE.Sprite(glowMaterial);
+            glow.scale.set(size * 3, size * 3, 1);
+            galaxyContainer.add(glow);
+          }
+          
+          // Position and rotate
+          galaxyContainer.position.copy(position);
+          galaxyContainer.rotation.set(rotation.x, rotation.y, rotation.z);
+          
+          galaxiesGroup.add(galaxyContainer);
+          
+          return {
+            container: galaxyContainer,
+            disk: galaxyDisk,
+            particles: particleSystem
+          };
+        };
+        
+        // Create star point texture
+        function createStarTexture() {
+          const canvas = document.createElement('canvas');
+          canvas.width = 32;
+          canvas.height = 32;
+          const ctx = canvas.getContext('2d');
+          
+          // Clear canvas
+          ctx.clearRect(0, 0, 32, 32);
+          
+          // Create radial gradient for star
+          const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+          gradient.addColorStop(0.1, 'rgba(255, 255, 255, 0.8)');
+          gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+          gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, 32, 32);
+          
+          return new THREE.CanvasTexture(canvas);
+        }
+        
+        // Create glow texture
+        function createGlowTexture(type, colors) {
+          const canvas = document.createElement('canvas');
+          canvas.width = 256;
+          canvas.height = 256;
+          const ctx = canvas.getContext('2d');
+          
+          // Clear canvas
+          ctx.clearRect(0, 0, 256, 256);
+          
+          // Create glow based on galaxy type
+          const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+          
+          if (type === 'spiral') {
+            const r = colors.glowR || 100;
+            const g = colors.glowG || 120;
+            const b = colors.glowB || 150;
+            
+            gradient.addColorStop(0, `rgba(${r+50}, ${g+50}, ${b+30}, 0.3)`);
+            gradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.1)`);
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          } else {
+            gradient.addColorStop(0, 'rgba(255, 240, 220, 0.2)');
+            gradient.addColorStop(0.5, 'rgba(255, 220, 180, 0.1)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          }
+          
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, 256, 256);
+          
+          return new THREE.CanvasTexture(canvas);
+        }
+      
+        // Create the galaxies
+        const galaxies = [];
+        
+        galaxies.push(createRealisticGalaxy(
+          new THREE.Vector3(-2500, 1500, -4800),  // Much farther position
+          new THREE.Vector3(Math.PI / 4, Math.PI / 6, 0),
+          120,  // Larger size to remain visible at distance
+          {
+            type: 'spiral',
+            colors: {
+              coreCenter: '#fffaf0',
+              core: '#fff8d0',
+              armR: 180, armG: 210, armB: 255,
+              glowR: 100, glowG: 130, glowB: 200,
+              armCount: 2,
+              spiralFactor: 4,
+              armWidth: 0.2,
+              rotation: 0.5
+            }
+          }
+        ));
+        
+        // Andromeda-like spiral - FAR AWAY
+        galaxies.push(createRealisticGalaxy(
+          new THREE.Vector3(3200, -800, -6000),  // Much farther position
+          new THREE.Vector3(-Math.PI / 5, Math.PI / 3, Math.PI / 7),
+          150,  // Larger size to remain visible
+          {
+            type: 'spiral',
+            colors: {
+              coreCenter: '#fffae0',
+              core: '#fff0c0',
+              armR: 240, armG: 210, armB: 180,
+              glowR: 180, glowG: 150, glowB: 120,
+              armCount: 2,
+              spiralFactor: 3.5,
+              armWidth: 0.25,
+              rotation: 0
+            }
+          }
+        ));
+        
+        // M87-like giant elliptical - FAR AWAY
+        galaxies.push(createRealisticGalaxy(
+          new THREE.Vector3(-3600, -1600, -7500),  // Much farther position
+          new THREE.Vector3(Math.PI / 6, -Math.PI / 8, 0),
+          180,  // Larger size to remain visible
+          {
+            type: 'elliptical',
+            colors: {
+              core: '#fff8e0',
+              mid: '#ffe8c0',
+              outer: 'rgba(255, 200, 150, 0.3)',
+              axisRatio: { x: 1.0, y: 0.8, z: 0.7 }
+            }
+          }
+        ));
+        
+        // Magellanic-like small irregular spiral - FAR AWAY
+        galaxies.push(createRealisticGalaxy(
+          new THREE.Vector3(1800, 2400, -5600),  // Much farther position
+          new THREE.Vector3(-Math.PI / 3, -Math.PI / 8, Math.PI / 5),
+          90,  // Larger size to remain visible
+          {
+            type: 'spiral',
+            colors: {
+              coreCenter: '#f0f8ff',
+              core: '#e0f0ff',
+              armR: 150, armG: 180, armB: 255,
+              glowR: 80, glowG: 120, glowB: 220,
+              armCount: 1,
+              spiralFactor: 2.5,
+              armWidth: 0.4,
+              rotation: 1.2
+            }
+          }
+        ));
+        
+        // Animate galaxies - simple rotation
+        const animateGalaxies = (delta) => {
+          galaxies.forEach((galaxy, index) => {
+            if (galaxy.disk) {
+              // Each galaxy rotates at a different speed
+              const rotationSpeed = 0.05 / (index + 5);
+              galaxy.container.rotation.z += rotationSpeed * delta;
+              
+              // For spiral galaxies, rotate the particles slightly differently for realism
+              if (galaxy.particles && index % 2 === 0) {
+                galaxy.particles.rotation.z += rotationSpeed * delta * 0.7;
+              }
+            }
+          });
+        };
+        
+        // Store the animation function
+        sceneRef.current.userData.animateGalaxies = animateGalaxies;
+        
+        return galaxies;
+      };
+
       createNebula();
+      const galaxies = createGalaxies();
+
+// Add galaxies to animation update
+const animateGalaxies = (delta) => {
+  if (galaxies) {
+    galaxies.forEach(galaxy => {
+      if (galaxy.material && galaxy.material.uniforms && galaxy.material.uniforms.time) {
+        galaxy.material.uniforms.time.value += delta;
+      }
+    });
+  }
+};
+
+// Store the animation function
+sceneRef.current.userData.animateGalaxies = animateGalaxies;
     }
 
     const createPlanetLabels = () => {
@@ -1821,6 +2319,12 @@ const VoidVoyager = () => {
             child.material.uniforms.time.value += delta;
           }
         });
+      }
+
+      
+
+      if (sceneRef.current && sceneRef.current.userData.animateGalaxies) {
+        sceneRef.current.userData.animateGalaxies(delta);
       }
 
       const currentSpeed = animationSpeedRef.current;
