@@ -588,46 +588,47 @@ const VoidVoyager = () => {
               },
             ],
       },
-      {
-        name: "Uranus",
-        radius: 2.8,
-        distance: 140,
-        color: 0x4be2ee,
-        emissive: 0x194d4e,
-        roughness: 0.5,
-        metalness: 0.3,
-        speed: 0.0006,
-        tilt: 1.71,
-        atmosphere: !isLowPerformance,
-        atmosphereColor: 0x99fafe,
-        description:
-          "Uranus is an ice giant with a unique feature - it rotates on its side, likely due to a massive collision in its early history.",
-        moons: isLowPerformance
-          ? []
-          : [
-              {
-                name: "Titania",
-                radius: 0.6,
-                distance: 6.5,
-                color: 0xd4d4d4,
-                emissive: 0x323232,
-                roughness: 0.7,
-                metalness: 0.1,
-                speed: 0.013,
-              },
-              {
-                name: "Oberon",
-                radius: 0.55,
-                distance: 8.5,
-                color: 0x929292,
-                emissive: 0x323232,
-                roughness: 0.8,
-                metalness: 0.1,
-                speed: 0.01,
-              },
-            ],
-      },
-      // Find the Neptune entry in your planetData array and replace it
+{
+  name: "Uranus",
+  radius: 2.8,
+  distance: 140,
+  color: 0x4be2ee,
+  emissive: 0x194d4e,
+  roughness: 0.5,
+  metalness: 0.3,
+  speed: 0.0006,
+  tilt: 1.71,
+  atmosphere: true,
+  atmosphereColor: 0x99fafe,
+  customShader: true,
+  rings: true,
+  description:
+    "Uranus is an ice giant with a unique feature - it rotates on its side, likely due to a massive collision in its early history.",
+  moons: isLowPerformance
+    ? []
+    : [
+        {
+          name: "Titania",
+          radius: 0.6,
+          distance: 6.5,
+          color: 0xd4d4d4,
+          emissive: 0x323232,
+          roughness: 0.7,
+          metalness: 0.1,
+          speed: 0.013,
+        },
+        {
+          name: "Oberon",
+          radius: 0.55,
+          distance: 8.5,
+          color: 0x929292,
+          emissive: 0x323232,
+          roughness: 0.8,
+          metalness: 0.1,
+          speed: 0.01,
+        },
+      ],
+},
 {
   name: "Neptune",
   radius: 2.8,
@@ -1243,6 +1244,113 @@ const VoidVoyager = () => {
               // Add bright limb (edge) effects
               float limb = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 4.0);
               finalColor += limb * vec3(0.3, 0.5, 0.8) * 0.3;
+              
+              gl_FragColor = vec4(finalColor, 1.0);
+            }
+          `
+        });
+      } else if (planet.name === "Uranus" && planet.customShader) {
+        planetMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            time: { value: 0 },
+            baseColor: { value: new THREE.Color(0x4be2ee) },
+            atmosphereColor: { value: new THREE.Color(0x9af6ff) },
+            polarColor: { value: new THREE.Color(0x73d0d8) },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            void main() {
+              vUv = uv;
+              vNormal = normalize(normalMatrix * normal);
+              vPosition = position;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform float time;
+            uniform vec3 baseColor;
+            uniform vec3 atmosphereColor;
+            uniform vec3 polarColor;
+            
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            float hash(vec2 p) {
+              return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+            
+            float noise(vec2 p) {
+              vec2 i = floor(p);
+              vec2 f = fract(p);
+              f = f * f * (3.0 - 2.0 * f);
+              return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                         mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+            }
+            
+            float fbm(vec2 p) {
+              float value = 0.0;
+              float amplitude = 0.5;
+              float frequency = 1.0;
+              for (int i = 0; i < 5; i++) {
+                value += amplitude * noise(p * frequency);
+                amplitude *= 0.5;
+                frequency *= 2.0;
+              }
+              return value;
+            }
+            
+            void main() {
+              vec3 lightDir = normalize(vec3(0.0, 0.0, 1.0));
+              float light = max(0.3, dot(vNormal, lightDir));
+              
+              vec3 normalizedPos = normalize(vPosition);
+              float lat = asin(normalizedPos.y);
+              float lon = atan(normalizedPos.z, normalizedPos.x);
+              
+              // Create subtle bands (Uranus has very faint bands compared to other gas giants)
+              float bandY = lat * 8.0;
+              float bandNoise = fbm(vec2(lon * 2.0 + time * 0.01, bandY * 0.5)) * 0.1;
+              float bands = sin(bandY + bandNoise) * 0.5 + 0.5;
+              bands = pow(bands, 2.0) * 0.15; // Make bands very subtle
+              
+              // Create polar regions with slightly different coloration
+              float polarRegion = smoothstep(0.6, 0.8, abs(lat) / 1.57);
+              
+              // Create extremely subtle cloud features
+              float cloudPattern1 = fbm(vec2(lon * 3.0 + time * 0.003, lat * 2.0)) * 0.05;
+              float cloudPattern2 = fbm(vec2(lon * 5.0 - time * 0.002, lat * 3.0 + time * 0.001)) * 0.03;
+              
+              // Create occasional discrete clouds (extremely rare on Uranus)
+              float discreteCloud = 0.0;
+              if (fbm(vec2(lon * 10.0, lat * 5.0 + time * 0.05)) > 0.75) {
+                vec2 cloudPos = vec2(
+                  hash(vec2(floor(time * 0.01), 1.0)) * 2.0 - 1.0,
+                  hash(vec2(floor(time * 0.01), 2.0)) * 2.0 - 1.0
+                );
+                float cloudDist = length(vec2(lon, lat * 2.0) - cloudPos);
+                discreteCloud = smoothstep(0.4, 0.1, cloudDist) * 0.08;
+              }
+              
+              // Create seasonal variation based on the extreme axial tilt
+              float season = sin(time * 0.1) * 0.5 + 0.5; // Full seasonal cycle
+              float seasonalVariation = mix(1.0, 1.1, season * polarRegion);
+              
+              // Combine all features
+              vec3 surfaceColor = mix(baseColor, atmosphereColor, bands + cloudPattern1 + cloudPattern2);
+              surfaceColor = mix(surfaceColor, polarColor, polarRegion * 0.3);
+              surfaceColor = mix(surfaceColor, atmosphereColor * 1.1, discreteCloud);
+              surfaceColor *= seasonalVariation;
+              
+              // Apply lighting
+              vec3 finalColor = surfaceColor * light;
+              
+              // Add limb darkening and subtle atmospheric haze
+              float limb = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
+              finalColor = mix(finalColor, atmosphereColor * 0.8, limb * 0.2);
               
               gl_FragColor = vec4(finalColor, 1.0);
             }
@@ -2328,6 +2436,19 @@ const VoidVoyager = () => {
         }
         
         neptuneMesh.children.forEach((child) => {
+          if (child.material && child.material.uniforms && child.material.uniforms.time) {
+            child.material.uniforms.time.value += delta;
+          }
+        });
+      }
+
+      if (planets["Uranus"] && planets["Uranus"].mesh) {
+        const uranusMesh = planets["Uranus"].mesh;
+        if (uranusMesh.material && uranusMesh.material.uniforms && uranusMesh.material.uniforms.time) {
+          uranusMesh.material.uniforms.time.value += delta;
+        }
+        
+        uranusMesh.children.forEach((child) => {
           if (child.material && child.material.uniforms && child.material.uniforms.time) {
             child.material.uniforms.time.value += delta;
           }
