@@ -431,44 +431,44 @@ const VoidVoyager = () => {
           },
         ],
       },
-{
-  name: "Mars",
-  radius: 1.5,
-  distance: 60,
-  color: 0xf67c3c,
-  emissive: 0x522b1a,
-  roughness: 0.7,
-  metalness: 0.0,
-  speed: 0.0024,
-  tilt: 0.44,
-  atmosphere: true,  
-  atmosphereColor: 0xf6b588,
-  customShader: true,  
-  description:
-    "Mars is known as the Red Planet due to iron oxide (rust) on its surface. It has polar ice caps and was once more Earth-like with flowing water.",
-  moons: [
-    {
-      name: "Phobos",
-      radius: 0.4,
-      distance: 3.5,
-      color: 0xd0c7a9,
-      emissive: 0x333328,
-      roughness: 0.9,
-      metalness: 0.1,
-      speed: 0.02,
-    },
-    {
-      name: "Deimos",
-      radius: 0.3,
-      distance: 4.5,
-      color: 0xd4cdc3,
-      emissive: 0x333328,
-      roughness: 0.9,
-      metalness: 0.1,
-      speed: 0.015,
-    },
-  ],
-},
+      {
+        name: "Mars",
+        radius: 1.5,
+        distance: 60,
+        color: 0xf67c3c,
+        emissive: 0x522b1a,
+        roughness: 0.7,
+        metalness: 0.0,
+        speed: 0.0024,
+        tilt: 0.44,
+        atmosphere: true,
+        atmosphereColor: 0xf6b588,
+        customShader: true,
+        description:
+          "Mars is known as the Red Planet due to iron oxide (rust) on its surface. It has polar ice caps and was once more Earth-like with flowing water.",
+        moons: [
+          {
+            name: "Phobos",
+            radius: 0.4,
+            distance: 3.5,
+            color: 0xd0c7a9,
+            emissive: 0x333328,
+            roughness: 0.9,
+            metalness: 0.1,
+            speed: 0.02,
+          },
+          {
+            name: "Deimos",
+            radius: 0.3,
+            distance: 4.5,
+            color: 0xd4cdc3,
+            emissive: 0x333328,
+            roughness: 0.9,
+            metalness: 0.1,
+            speed: 0.015,
+          },
+        ],
+      },
       {
         name: "Jupiter",
         radius: 4.5,
@@ -897,10 +897,10 @@ const VoidVoyager = () => {
         planetMaterial = new THREE.ShaderMaterial({
           uniforms: {
             time: { value: 0 },
-            baseColor: { value: new THREE.Color(0xf67c3c) },  
-            polarColor: { value: new THREE.Color(0xffffff) }, 
+            baseColor: { value: new THREE.Color(0xf67c3c) },
+            polarColor: { value: new THREE.Color(0xffffff) },
             highlightColor: { value: new THREE.Color(0xe8c9a0) },
-            lowlandColor: { value: new THREE.Color(0xba5536) }, 
+            lowlandColor: { value: new THREE.Color(0xba5536) },
             emissiveColor: { value: new THREE.Color(0x522b1a) },
           },
           vertexShader: `
@@ -1123,7 +1123,7 @@ const VoidVoyager = () => {
               
               gl_FragColor = vec4(finalColor, 1.0);
             }
-          `
+          `,
         });
       } else {
         planetMaterial = new THREE.MeshStandardMaterial({
@@ -1342,7 +1342,10 @@ const VoidVoyager = () => {
             blending: THREE.AdditiveBlending,
             side: THREE.BackSide,
           });
-          const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+          const atmosphere = new THREE.Mesh(
+            atmosphereGeometry,
+            atmosphereMaterial
+          );
           planetMesh.add(atmosphere);
         } else if (planet.name === "Venus") {
           const atmosphereMaterial = new THREE.ShaderMaterial({
@@ -1421,19 +1424,22 @@ const VoidVoyager = () => {
             blending: THREE.AdditiveBlending,
             side: THREE.BackSide,
           });
-          
-          const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+
+          const atmosphere = new THREE.Mesh(
+            atmosphereGeometry,
+            atmosphereMaterial
+          );
           planetMesh.add(atmosphere);
-          
+
           const outerAtmosphereGeometry = new THREE.SphereGeometry(
-            planet.radius * 1.18, 
-            planetSegments, 
+            planet.radius * 1.18,
+            planetSegments,
             planetSegments
           );
-          
+
           const outerAtmosphereMaterial = new THREE.ShaderMaterial({
             uniforms: {
-              time: { value: 0 }
+              time: { value: 0 },
             },
             vertexShader: `
               varying vec3 vNormal;
@@ -1483,8 +1489,11 @@ const VoidVoyager = () => {
             blending: THREE.AdditiveBlending,
             side: THREE.BackSide,
           });
-          
-          const outerAtmosphere = new THREE.Mesh(outerAtmosphereGeometry, outerAtmosphereMaterial);
+
+          const outerAtmosphere = new THREE.Mesh(
+            outerAtmosphereGeometry,
+            outerAtmosphereMaterial
+          );
           planetMesh.add(outerAtmosphere);
         } else if (!isLowPerformance) {
           const atmosphereMaterial = new THREE.ShaderMaterial({
@@ -2159,19 +2168,31 @@ const VoidVoyager = () => {
 
       if (planets["Mars"] && planets["Mars"].mesh) {
         const marsMesh = planets["Mars"].mesh;
-        if (marsMesh.material && marsMesh.material.uniforms && marsMesh.material.uniforms.time) {
+        if (
+          marsMesh.material &&
+          marsMesh.material.uniforms &&
+          marsMesh.material.uniforms.time
+        ) {
           marsMesh.material.uniforms.time.value += delta;
         }
       }
 
       if (planets["Venus"] && planets["Venus"].mesh) {
         const venusMesh = planets["Venus"].mesh;
-        if (venusMesh.material && venusMesh.material.uniforms && venusMesh.material.uniforms.time) {
+        if (
+          venusMesh.material &&
+          venusMesh.material.uniforms &&
+          venusMesh.material.uniforms.time
+        ) {
           venusMesh.material.uniforms.time.value += delta;
         }
-        
+
         venusMesh.children.forEach((child) => {
-          if (child.material && child.material.uniforms && child.material.uniforms.time) {
+          if (
+            child.material &&
+            child.material.uniforms &&
+            child.material.uniforms.time
+          ) {
             child.material.uniforms.time.value += delta;
           }
         });
