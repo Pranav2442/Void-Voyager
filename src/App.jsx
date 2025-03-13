@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { Github, Globe, Orbit, Moon, Sun, Rocket } from "lucide-react";
+import { Github, Globe, Orbit, Moon, } from "lucide-react";
 
 const GoogleAnalytics = () => {
   useEffect(() => {
@@ -34,7 +34,6 @@ const VoidVoyager = () => {
   const [showOrbits, setShowOrbits] = useState(true);
   const [showMoons, setShowMoons] = useState(true);
   const [selectedPlanet, setSelectedPlanet] = useState(null);
-  const [planetLabels, setPlanetLabels] = useState({});
   const [hoveredPlanet, setHoveredPlanet] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const [speedMultiplier, setSpeedMultiplier] = useState(1);
@@ -53,12 +52,9 @@ const VoidVoyager = () => {
   const starsRef = useRef(null);
   const raycasterRef = useRef(new THREE.Raycaster());
   const animationSpeedRef = useRef(1);
-  const lastFrameTimeRef = useRef(0);
-  const frameCountRef = useRef(0);
   const pointerMoveTimeoutRef = useRef(null);
-  const cometsRef = useRef([]);
-const asteroidsRef = useRef([]);
-const asteroidBeltRef = useRef(null);
+  const asteroidsRef = useRef([]);
+  const asteroidBeltRef = useRef(null);
 
   const visibilityRef = useRef({
     showPlanets: true,
@@ -474,7 +470,7 @@ const asteroidBeltRef = useRef(null);
       },
       {
         name: "Jupiter",
-        radius: 4.5,
+        radius: 5.2,
         distance: 80,
         color: 0xf4b87d,
         emissive: 0x4d3419,
@@ -483,6 +479,7 @@ const asteroidBeltRef = useRef(null);
         speed: 0.0013,
         tilt: 0.05,
         bands: true,
+        jupiterRealistic: true,
         description:
           "Jupiter is the largest planet in our Solar System. It's a gas giant with a distinctive Great Red Spot, which is a giant, persistent storm.",
         moons: isLowPerformance
@@ -552,6 +549,8 @@ const asteroidBeltRef = useRef(null);
         speed: 0.0009,
         tilt: 0.47,
         bands: true,
+        saturnRealistic: true,
+        enhancedRings: true,
         description:
           "Saturn is famous for its stunning ring system. It's a gas giant composed mainly of hydrogen and helium.",
         rings: true,
@@ -841,6 +840,382 @@ const asteroidBeltRef = useRef(null);
               vec3 finalColor = diffuseColor + highlightColor;
               
               gl_FragColor = vec4(finalColor, 1.0);
+            }
+          `,
+        });
+      } else if (planet.name === "Saturn" && planet.saturnRealistic) {
+        planetMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            baseColor: { value: new THREE.Color(planet.color) },
+            emissiveColor: {
+              value: new THREE.Color(planet.emissive || 0x000000),
+            },
+            time: { value: 0 },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            void main() {
+              vUv = uv;
+              vNormal = normalize(normalMatrix * normal);
+              vPosition = position;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform vec3 baseColor;
+            uniform vec3 emissiveColor;
+            uniform float time;
+            
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            float hash(vec3 p) {
+              p = fract(p * vec3(443.8975, 397.2973, 491.1871));
+              p += dot(p.zxy, p.yxz + 19.27);
+              return fract(p.x * p.y * p.z);
+            }
+            
+            float noise(vec3 p) {
+              vec3 i = floor(p);
+              vec3 f = fract(p);
+              f = f * f * (3.0 - 2.0 * f);
+              
+              float a = hash(i);
+              float b = hash(i + vec3(1.0, 0.0, 0.0));
+              float c = hash(i + vec3(0.0, 1.0, 0.0));
+              float d = hash(i + vec3(1.0, 1.0, 0.0));
+              float e = hash(i + vec3(0.0, 0.0, 1.0));
+              float f2 = hash(i + vec3(1.0, 0.0, 1.0));
+              float g = hash(i + vec3(0.0, 1.0, 1.0));
+              float h = hash(i + vec3(1.0, 1.0, 1.0));
+              
+              return mix(
+                mix(mix(a, b, f.x), mix(c, d, f.x), f.y),
+                mix(mix(e, f2, f.x), mix(g, h, f.x), f.y),
+                f.z
+              );
+            }
+            
+            float fbm(vec3 p) {
+              float value = 0.0;
+              float amplitude = 0.5;
+              float frequency = 1.0;
+              
+              for (int i = 0; i < 6; i++) {
+                value += amplitude * noise(p * frequency);
+                amplitude *= 0.5;
+                frequency *= 2.0;
+              }
+              
+              return value;
+            }
+            
+            void main() {
+              vec3 nPos = normalize(vPosition);
+              float lat = asin(nPos.y);
+              float lon = atan(nPos.z, nPos.x);
+              
+              vec3 saturnBase = vec3(0.92, 0.87, 0.67);
+              vec3 bandLight = vec3(0.96, 0.90, 0.72);
+              vec3 bandDark = vec3(0.82, 0.73, 0.52);
+              vec3 stormColor = vec3(0.98, 0.95, 0.82);
+              vec3 shadowColor = vec3(0.65, 0.60, 0.45);
+              
+              float bandPattern = sin(lat * 14.0 + fbm(vec3(lon * 2.0, lat * 20.0, time * 0.05)) * 1.5);
+              bandPattern = bandPattern * 0.5 + 0.5;
+              
+              bandPattern = mix(0.4, bandPattern, 0.6);
+              
+              float cloudDetail = fbm(vec3(lon * 4.0 + time * 0.02, lat * 10.0, time * 0.01));
+              cloudDetail = cloudDetail * 0.5 + 0.5;
+              
+              float latFactor = cos(lat * 2.0);
+              float flowSpeed = 0.03 * latFactor;
+              float flowPattern = fbm(vec3(lon * 5.0 + time * flowSpeed, lat * 15.0, time * 0.01));
+              
+              float northPole = smoothstep(0.75, 0.95, lat);
+              
+              float hexFactor = 6.0;
+              float hexAngle = atan(nPos.z, nPos.x);
+              float hexPattern = cos(hexAngle * hexFactor + time * 0.1);
+              hexPattern = smoothstep(0.0, 0.2, hexPattern) * northPole;
+              
+              float southPole = smoothstep(0.75, 0.95, -lat);
+              float vortex = fbm(vec3(lon * 3.0 + time * 0.05, -lat * 5.0, time * 0.01)) * southPole;
+              
+              float storm1 = smoothstep(0.12, 0.05, length(vec2(lon - 1.5, (lat - 0.3) * 2.0)));
+              float storm2 = smoothstep(0.10, 0.04, length(vec2(lon - 3.0, (lat + 0.4) * 1.8)));
+              float allStorms = max(storm1, storm2);
+              
+              float ringShadow = 0.0;
+              
+              float tiltFactor = 0.47;
+              
+              float shadowY = nPos.y / tan(tiltFactor);
+              float shadowX = nPos.x;
+              float shadowZ = nPos.z;
+              
+              float shadowDist = sqrt(shadowX * shadowX + shadowZ * shadowZ);
+              
+              float innerShadow = smoothstep(0.8, 0.85, shadowDist);
+              float outerShadow = 1.0 - smoothstep(1.3, 1.4, shadowDist);
+              
+              float equatorFactor = 1.0 - abs(lat) * 2.0;
+              equatorFactor = max(0.0, equatorFactor);
+              
+              ringShadow = max(0.0, innerShadow * outerShadow * equatorFactor * 0.5);
+              
+              vec3 saturnColor = saturnBase;
+              
+              saturnColor = mix(bandDark, bandLight, bandPattern * cloudDetail);
+              
+              saturnColor = mix(saturnColor, mix(bandLight, bandDark, 0.5), cloudDetail * 0.3);
+              
+              saturnColor = mix(saturnColor, mix(bandLight, saturnColor, 0.7), flowPattern * 0.2);
+              
+              saturnColor = mix(saturnColor, mix(bandDark, bandLight, hexPattern), hexPattern * 0.3);
+              
+              saturnColor = mix(saturnColor, bandDark, vortex * 0.4);
+              
+              saturnColor = mix(saturnColor, stormColor, allStorms * 0.5);
+              
+              float detailNoise = fbm(vec3(lon * 30.0, lat * 40.0, time * 0.01));
+              saturnColor = mix(saturnColor, mix(bandLight, bandDark, detailNoise), detailNoise * 0.1);
+              
+              saturnColor = mix(saturnColor, shadowColor, ringShadow);
+              
+              float limb = pow(1.0 - max(0.0, dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0);
+              saturnColor = mix(saturnColor, mix(bandDark, saturnBase, 0.5), limb * 0.4);
+              
+              float rim = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 4.0);
+              saturnColor += rim * vec3(0.8, 0.7, 0.5) * 0.2;
+              
+              float lightFactor = max(0.2, dot(vNormal, vec3(0.0, 0.0, 1.0)));
+              saturnColor *= lightFactor * 1.3;
+              
+              saturnColor += emissiveColor * 0.12;
+              
+              gl_FragColor = vec4(saturnColor, 1.0);
+            }
+          `,
+        });
+      } else if (planet.name === "Jupiter" && planet.jupiterRealistic) {
+        planetMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            baseColor: { value: new THREE.Color(planet.color) },
+            emissiveColor: {
+              value: new THREE.Color(planet.emissive || 0x000000),
+            },
+            time: { value: 0 },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            void main() {
+              vUv = uv;
+              vNormal = normalize(normalMatrix * normal);
+              vPosition = position;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform vec3 baseColor;
+            uniform vec3 emissiveColor;
+            uniform float time;
+            
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            float hash(vec3 p) {
+              p = fract(p * vec3(443.8975, 397.2973, 491.1871));
+              p += dot(p.zxy, p.yxz + 19.27);
+              return fract(p.x * p.y * p.z);
+            }
+            
+            float noise(vec3 p) {
+              vec3 i = floor(p);
+              vec3 f = fract(p);
+              f = f * f * (3.0 - 2.0 * f);
+              
+              float a = hash(i);
+              float b = hash(i + vec3(1.0, 0.0, 0.0));
+              float c = hash(i + vec3(0.0, 1.0, 0.0));
+              float d = hash(i + vec3(1.0, 1.0, 0.0));
+              float e = hash(i + vec3(0.0, 0.0, 1.0));
+              float f2 = hash(i + vec3(1.0, 0.0, 1.0));
+              float g = hash(i + vec3(0.0, 1.0, 1.0));
+              float h = hash(i + vec3(1.0, 1.0, 1.0));
+              
+              return mix(
+                mix(mix(a, b, f.x), mix(c, d, f.x), f.y),
+                mix(mix(e, f2, f.x), mix(g, h, f.x), f.y),
+                f.z
+              );
+            }
+            
+            float fbm(vec3 p) {
+              float value = 0.0;
+              float amplitude = 0.5;
+              float frequency = 1.0;
+              
+              for (int i = 0; i < 6; i++) {
+                value += amplitude * noise(p * frequency);
+                amplitude *= 0.5;
+                frequency *= 2.0;
+              }
+              
+              return value;
+            }
+            
+            float voronoi(vec3 p) {
+              vec3 b, r, g = floor(p);
+              p = fract(p);
+              float d = 1.0;
+              
+              for(int j = -1; j <= 1; j++) {
+                for(int i = -1; i <= 1; i++) {
+                  for(int k = -1; k <= 1; k++) {
+                    b = vec3(float(i), float(j), float(k));
+                    r = b - p + hash(g + b);
+                    d = min(d, dot(r, r));
+                  }
+                }
+              }
+              
+              return sqrt(d);
+            }
+            
+            void main() {
+              vec3 nPos = normalize(vPosition);
+              float lat = asin(nPos.y);
+              float lon = atan(nPos.z, nPos.x);
+              
+              vec3 darkBrown = vec3(0.48, 0.29, 0.15);
+              vec3 mediumBrown = vec3(0.65, 0.45, 0.25);
+              vec3 orangeTan = vec3(0.82, 0.58, 0.35);
+              vec3 creamColor = vec3(0.92, 0.80, 0.55);
+              vec3 redspotDark = vec3(0.72, 0.25, 0.12);
+              vec3 redspotLight = vec3(0.85, 0.35, 0.15);
+              vec3 stormWhite = vec3(0.95, 0.93, 0.85);
+              
+              float equator = smoothstep(0.05, -0.05, abs(lat));
+              
+              float NEB = smoothstep(0.15, 0.05, lat) - equator;
+              float NTB = smoothstep(0.35, 0.25, lat) - smoothstep(0.45, 0.35, lat);
+              float NNTB = smoothstep(0.6, 0.5, lat) - smoothstep(0.7, 0.6, lat);
+              
+              float SEB = smoothstep(0.05, 0.15, -lat) - equator;
+              float STB = smoothstep(0.25, 0.35, -lat) - smoothstep(0.35, 0.45, -lat);
+              float SSTB = smoothstep(0.5, 0.6, -lat) - smoothstep(0.6, 0.7, -lat);
+              
+              float timeScale = time * 0.1;
+              float NEBflow = fbm(vec3(lon * 3.0 + timeScale * 0.3, lat * 30.0, timeScale * 0.5)) * NEB;
+              float SEBflow = fbm(vec3(lon * 4.0 - timeScale * 0.4, lat * 35.0, timeScale * 0.6)) * SEB;
+              float NTBflow = fbm(vec3(lon * 2.5 + timeScale * 0.2, lat * 25.0, timeScale * 0.3)) * NTB;
+              float STBflow = fbm(vec3(lon * 3.5 - timeScale * 0.25, lat * 28.0, timeScale * 0.4)) * STB;
+              
+              float equatorTurbulence = fbm(vec3(lon * 6.0 + timeScale, lat * 50.0, timeScale * 0.1)) * 0.7 * equator;
+              float NEBturbulence = fbm(vec3(lon * 8.0 + timeScale * 0.7, lat * 60.0, timeScale * 0.2)) * 0.8 * NEB;
+              float SEBturbulence = fbm(vec3(lon * 9.0 - timeScale * 0.8, lat * 65.0, timeScale * 0.3)) * 0.8 * SEB;
+              
+              float grsLon = 0.6 + timeScale * 0.03;
+              float grsLat = -0.22;
+              
+              vec2 grsPos = vec2(lon - grsLon, (lat - grsLat) * 2.5);
+              float grsDistance = length(grsPos);
+              
+              float grsCore = smoothstep(0.35, 0.05, grsDistance);
+              float grsEdge = smoothstep(0.45, 0.35, grsDistance) - grsCore;
+              float grsOuter = smoothstep(0.55, 0.45, grsDistance) - grsEdge - grsCore;
+              
+              float grsDetail = fbm(vec3(
+                grsPos.x * 10.0 + time * 0.05, 
+                grsPos.y * 10.0, 
+                time * 0.05
+              )) * grsCore * 0.5;
+              
+              float oval1 = smoothstep(0.15, 0.05, length(vec2(lon - 2.3, (lat - 0.35) * 2.0)));
+              float oval2 = smoothstep(0.12, 0.04, length(vec2(lon - (3.5 + sin(time * 0.1) * 0.2), (lat + 0.28) * 1.8)));
+              float oval3 = smoothstep(0.14, 0.05, length(vec2(lon - 1.7, (lat - 0.4) * 1.9)));
+              
+              float allOvals = max(oval1, max(oval2, oval3));
+              
+              float smallVortices = 0.0;
+              for (int i = 0; i < 8; i++) {
+                float idx = float(i);
+                float vortexLon = idx * 0.8 + sin(idx * 0.7 + time * 0.1) * 0.3;
+                float vortexLat = mix(0.4, -0.4, fract(idx * 0.27)) + sin(idx * 0.9) * 0.1;
+                float vortexSize = mix(0.03, 0.08, fract(idx * 0.543));
+                
+                smallVortices = max(
+                  smallVortices, 
+                  smoothstep(vortexSize, vortexSize * 0.4, length(vec2(lon - vortexLon, (lat - vortexLat) * 1.5)))
+                );
+              }
+              
+              float cellPattern = voronoi(vec3(lon * 20.0, lat * 20.0, time * 0.02));
+              cellPattern = smoothstep(0.0, 0.3, cellPattern);
+              
+              float detailNoise = fbm(vec3(lon * 30.0, lat * 30.0, time * 0.01));
+              
+              vec3 jupiterColor = orangeTan;
+              
+              jupiterColor = mix(jupiterColor, darkBrown, NEB * 0.8);
+              jupiterColor = mix(jupiterColor, darkBrown, SEB * 0.7);
+              jupiterColor = mix(jupiterColor, mediumBrown, NTB * 0.7);
+              jupiterColor = mix(jupiterColor, mediumBrown, STB * 0.7);
+              jupiterColor = mix(jupiterColor, mediumBrown, NNTB * 0.6);
+              jupiterColor = mix(jupiterColor, mediumBrown, SSTB * 0.6);
+              
+              jupiterColor = mix(jupiterColor, creamColor, equator * 0.4);
+              
+              jupiterColor = mix(jupiterColor, darkBrown, NEBflow * 0.3);
+              jupiterColor = mix(jupiterColor, darkBrown, SEBflow * 0.3);
+              jupiterColor = mix(jupiterColor, mix(darkBrown, orangeTan, 0.5), NTBflow * 0.2);
+              jupiterColor = mix(jupiterColor, mix(darkBrown, orangeTan, 0.5), STBflow * 0.2);
+              
+              jupiterColor = mix(jupiterColor, orangeTan, equatorTurbulence * 0.5);
+              jupiterColor = mix(jupiterColor, darkBrown, NEBturbulence * 0.5);
+              jupiterColor = mix(jupiterColor, darkBrown, SEBturbulence * 0.5);
+              
+              jupiterColor = mix(jupiterColor, redspotDark, grsCore * 0.85);
+              jupiterColor = mix(jupiterColor, redspotLight, grsEdge * 0.7);
+              jupiterColor = mix(jupiterColor, mix(redspotLight, orangeTan, 0.6), grsOuter * 0.5);
+              jupiterColor = mix(jupiterColor, vec3(0.85, 0.3, 0.1), grsDetail);
+              
+              jupiterColor = mix(jupiterColor, stormWhite, allOvals * 0.75);
+              
+              jupiterColor = mix(jupiterColor, stormWhite, smallVortices * 0.6);
+              
+              jupiterColor = mix(jupiterColor, creamColor, cellPattern * 0.15);
+              
+              jupiterColor = mix(jupiterColor, mix(orangeTan, darkBrown, 0.5), detailNoise * 0.15);
+              
+              float northPole = smoothstep(0.7, 0.85, lat);
+              float southPole = smoothstep(0.7, 0.85, -lat);
+              vec3 polarColor = mix(mediumBrown, darkBrown, 0.7);
+              jupiterColor = mix(jupiterColor, polarColor, northPole);
+              jupiterColor = mix(jupiterColor, polarColor, southPole);
+              
+              float limb = pow(1.0 - max(0.0, dot(vNormal, vec3(0.0, 0.0, 1.0))), 4.0);
+              jupiterColor = mix(jupiterColor, mix(orangeTan, darkBrown, 0.5), limb * 0.5);
+              
+              float rim = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 3.0);
+              jupiterColor += rim * vec3(0.7, 0.5, 0.3) * 0.3;
+              
+              jupiterColor += emissiveColor * 0.1;
+              
+              float lightFactor = max(0.2, dot(vNormal, vec3(0.0, 0.0, 1.0)));
+              jupiterColor *= lightFactor * 1.4;
+              
+              gl_FragColor = vec4(jupiterColor, 1.0);
             }
           `,
         });
@@ -1873,169 +2248,184 @@ const asteroidBeltRef = useRef(null);
     const createAsteroidBelt = () => {
       const asteroids = [];
       const numberOfAsteroids = isMobile ? 1000 : 3500;
-      
+
       const asteroidBelt = new THREE.Object3D();
       scene.add(asteroidBelt);
-      
-      const beltInnerRadius = 65; 
-      const beltOuterRadius = 75; 
-      const beltThickness = 5;    
-      
+
+      const beltInnerRadius = 65;
+      const beltOuterRadius = 75;
+      const beltThickness = 5;
+
       const kirkwoodGaps = [
-        { position: 66.7, width: 0.5 }, 
-        { position: 68.8, width: 0.6 }, 
-        { position: 71.8, width: 0.7 }, 
-        { position: 72.8, width: 0.5 }, 
-        { position: 73.7, width: 0.8 }  
+        { position: 66.7, width: 0.5 },
+        { position: 68.8, width: 0.6 },
+        { position: 71.8, width: 0.7 },
+        { position: 72.8, width: 0.5 },
+        { position: 73.7, width: 0.8 },
       ];
-      
+
       const createAsteroidTypes = () => {
         const types = [];
-        
+
         const createAsteroidTexture = (baseColor, details, bumpiness) => {
-          const canvas = document.createElement('canvas');
+          const canvas = document.createElement("canvas");
           canvas.width = 256;
           canvas.height = 256;
-          const ctx = canvas.getContext('2d');
-          
+          const ctx = canvas.getContext("2d");
+
           ctx.fillStyle = baseColor;
           ctx.fillRect(0, 0, 256, 256);
-          
+
           for (let i = 0; i < 5000; i++) {
             const x = Math.random() * 256;
             const y = Math.random() * 256;
             const radius = Math.random() * 2 + 0.5;
-            
+
             const shade = Math.floor(Math.random() * 40 - 20);
             ctx.fillStyle = adjustColor(baseColor, shade);
-            
+
             ctx.beginPath();
             ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.fill();
           }
-          
+
           for (let i = 0; i < details; i++) {
             const x = Math.random() * 256;
             const y = Math.random() * 256;
             const radius = Math.random() * 20 + 5;
-            
+
             const shade = Math.floor(Math.random() * 30 - 15);
             ctx.fillStyle = adjustColor(baseColor, shade - 20);
-            
+
             ctx.beginPath();
             ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.fill();
           }
-          
+
           for (let i = 0; i < bumpiness; i++) {
             const x = Math.random() * 256;
             const y = Math.random() * 256;
             const radius = Math.random() * 12 + 3;
             const shade = Math.floor(Math.random() * 60 - 30);
-            
+
             ctx.fillStyle = adjustColor(baseColor, shade - 30);
             ctx.beginPath();
             ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.fill();
-            
+
             ctx.strokeStyle = adjustColor(baseColor, 15);
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.arc(x, y, radius, 0, Math.PI * 2);
             ctx.stroke();
           }
-          
+
           const texture = new THREE.CanvasTexture(canvas);
-          
-          const normalCanvas = document.createElement('canvas');
+
+          const normalCanvas = document.createElement("canvas");
           normalCanvas.width = 256;
           normalCanvas.height = 256;
-          const normalCtx = normalCanvas.getContext('2d');
-          
-          normalCtx.fillStyle = '#8080ff';
+          const normalCtx = normalCanvas.getContext("2d");
+
+          normalCtx.fillStyle = "#8080ff";
           normalCtx.fillRect(0, 0, 256, 256);
-          
+
           for (let i = 0; i < bumpiness; i++) {
             const x = Math.random() * 256;
             const y = Math.random() * 256;
             const radius = Math.random() * 12 + 3;
-            
-            const gradient = normalCtx.createRadialGradient(x, y, 0, x, y, radius);
-            gradient.addColorStop(0, '#4040ff'); 
-            gradient.addColorStop(0.7, '#8080ff'); 
-            gradient.addColorStop(0.9, '#c0c0ff'); 
-            gradient.addColorStop(1, '#8080ff'); 
-            
+
+            const gradient = normalCtx.createRadialGradient(
+              x,
+              y,
+              0,
+              x,
+              y,
+              radius
+            );
+            gradient.addColorStop(0, "#4040ff");
+            gradient.addColorStop(0.7, "#8080ff");
+            gradient.addColorStop(0.9, "#c0c0ff");
+            gradient.addColorStop(1, "#8080ff");
+
             normalCtx.fillStyle = gradient;
             normalCtx.beginPath();
             normalCtx.arc(x, y, radius, 0, Math.PI * 2);
             normalCtx.fill();
           }
-          
+
           const normalMap = new THREE.CanvasTexture(normalCanvas);
-          
+
           return { map: texture, normalMap: normalMap };
         };
-        
+
         function adjustColor(hexColor, amount) {
           const r = parseInt(hexColor.slice(1, 3), 16);
           const g = parseInt(hexColor.slice(3, 5), 16);
           const b = parseInt(hexColor.slice(5, 7), 16);
-          
+
           return `rgb(${Math.min(255, Math.max(0, r + amount))}, 
                       ${Math.min(255, Math.max(0, g + amount))}, 
                       ${Math.min(255, Math.max(0, b + amount))})`;
         }
-        
-        const cTypeMaps = createAsteroidTexture('#32302e', 15, 8);
-        types.push(new THREE.MeshStandardMaterial({
-          map: cTypeMaps.map,
-          normalMap: cTypeMaps.normalMap,
-          roughness: 0.95,
-          metalness: 0.05,
-          flatShading: true
-        }));
-        
-        const sTypeMaps = createAsteroidTexture('#6b5c4d', 20, 12);
-        types.push(new THREE.MeshStandardMaterial({
-          map: sTypeMaps.map,
-          normalMap: sTypeMaps.normalMap,
-          roughness: 0.85,
-          metalness: 0.15,
-          flatShading: true
-        }));
-        
-        const mTypeMaps = createAsteroidTexture('#52504e', 10, 5);
-        types.push(new THREE.MeshStandardMaterial({
-          map: mTypeMaps.map,
-          normalMap: mTypeMaps.normalMap,
-          roughness: 0.6,
-          metalness: 0.7,
-          flatShading: true
-        }));
-        
-        const vTypeMaps = createAsteroidTexture('#4a3c37', 12, 10);
-        types.push(new THREE.MeshStandardMaterial({
-          map: vTypeMaps.map,
-          normalMap: vTypeMaps.normalMap,
-          roughness: 0.75,
-          metalness: 0.25,
-          flatShading: true
-        }));
-        
+
+        const cTypeMaps = createAsteroidTexture("#32302e", 15, 8);
+        types.push(
+          new THREE.MeshStandardMaterial({
+            map: cTypeMaps.map,
+            normalMap: cTypeMaps.normalMap,
+            roughness: 0.95,
+            metalness: 0.05,
+            flatShading: true,
+          })
+        );
+
+        const sTypeMaps = createAsteroidTexture("#6b5c4d", 20, 12);
+        types.push(
+          new THREE.MeshStandardMaterial({
+            map: sTypeMaps.map,
+            normalMap: sTypeMaps.normalMap,
+            roughness: 0.85,
+            metalness: 0.15,
+            flatShading: true,
+          })
+        );
+
+        const mTypeMaps = createAsteroidTexture("#52504e", 10, 5);
+        types.push(
+          new THREE.MeshStandardMaterial({
+            map: mTypeMaps.map,
+            normalMap: mTypeMaps.normalMap,
+            roughness: 0.6,
+            metalness: 0.7,
+            flatShading: true,
+          })
+        );
+
+        const vTypeMaps = createAsteroidTexture("#4a3c37", 12, 10);
+        types.push(
+          new THREE.MeshStandardMaterial({
+            map: vTypeMaps.map,
+            normalMap: vTypeMaps.normalMap,
+            roughness: 0.75,
+            metalness: 0.25,
+            flatShading: true,
+          })
+        );
+
         return types;
       };
-      
+
       const asteroidTypes = createAsteroidTypes();
-      
+
       const geometryPool = [];
-      
+
       for (let i = 0; i < 12; i++) {
         const baseSize = Math.random() * 0.3 + 0.2;
         let asteroidGeometry;
-        
+
         const shapeType = Math.floor(Math.random() * 5);
-        
+
         if (shapeType === 0) {
           asteroidGeometry = new THREE.IcosahedronGeometry(baseSize, 1);
         } else if (shapeType === 1) {
@@ -2047,103 +2437,121 @@ const asteroidBeltRef = useRef(null);
         } else {
           const geo1 = new THREE.IcosahedronGeometry(baseSize, 0);
           const geo2 = new THREE.DodecahedronGeometry(baseSize * 0.8, 0);
-          
+
           const offset = new THREE.Vector3(
             (Math.random() - 0.5) * baseSize * 0.5,
             (Math.random() - 0.5) * baseSize * 0.5,
             (Math.random() - 0.5) * baseSize * 0.5
           );
-          
+
           const mergedGeometry = mergeBufferGeometries([geo1, geo2], false);
           asteroidGeometry = mergedGeometry;
         }
-        
+
         const positions = asteroidGeometry.attributes.position;
         for (let j = 0; j < positions.count; j++) {
           const vertex = new THREE.Vector3();
           vertex.fromBufferAttribute(positions, j);
-          
+
           const distortion = 0.2 + Math.random() * 0.3;
           vertex.x += (Math.random() - 0.5) * distortion * baseSize;
           vertex.y += (Math.random() - 0.5) * distortion * baseSize;
           vertex.z += (Math.random() - 0.5) * distortion * baseSize;
-          
+
           positions.setXYZ(j, vertex.x, vertex.y, vertex.z);
         }
-        
+
         positions.needsUpdate = true;
         asteroidGeometry.computeVertexNormals();
-        
+
         geometryPool.push(asteroidGeometry);
       }
-      
+
       function mergeBufferGeometries(geometries) {
-        const totalVertices = geometries.reduce((acc, geo) => acc + geo.attributes.position.count, 0);
+        const totalVertices = geometries.reduce(
+          (acc, geo) => acc + geo.attributes.position.count,
+          0
+        );
         const positions = new Float32Array(totalVertices * 3);
         const normals = new Float32Array(totalVertices * 3);
         const uvs = new Float32Array(totalVertices * 2);
-        
+
         let offset = 0;
-        
+
         for (let i = 0; i < geometries.length; i++) {
           const geo = geometries[i];
           const posAttr = geo.attributes.position;
           const normAttr = geo.attributes.normal;
           const uvAttr = geo.attributes.uv;
-          
+
           for (let j = 0; j < posAttr.count; j++) {
             positions[(offset + j) * 3] = posAttr.getX(j);
             positions[(offset + j) * 3 + 1] = posAttr.getY(j);
             positions[(offset + j) * 3 + 2] = posAttr.getZ(j);
-            
+
             normals[(offset + j) * 3] = normAttr.getX(j);
             normals[(offset + j) * 3 + 1] = normAttr.getY(j);
             normals[(offset + j) * 3 + 2] = normAttr.getZ(j);
-            
+
             if (uvAttr) {
               uvs[(offset + j) * 2] = uvAttr.getX(j);
               uvs[(offset + j) * 2 + 1] = uvAttr.getY(j);
             }
           }
-          
+
           offset += posAttr.count;
         }
-        
+
         const mergedGeometry = new THREE.BufferGeometry();
-        mergedGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        mergedGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-        mergedGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-        
+        mergedGeometry.setAttribute(
+          "position",
+          new THREE.BufferAttribute(positions, 3)
+        );
+        mergedGeometry.setAttribute(
+          "normal",
+          new THREE.BufferAttribute(normals, 3)
+        );
+        mergedGeometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+
         return mergedGeometry;
       }
-      
+
       for (let i = 0; i < numberOfAsteroids; i++) {
-        const geometry = geometryPool[Math.floor(Math.random() * geometryPool.length)];
-        
+        const geometry =
+          geometryPool[Math.floor(Math.random() * geometryPool.length)];
+
         let materialIndex;
         const typeRandom = Math.random();
         if (typeRandom < 0.75) {
-          materialIndex = 0; 
+          materialIndex = 0;
         } else if (typeRandom < 0.92) {
-          materialIndex = 1; 
+          materialIndex = 1;
         } else if (typeRandom < 0.99) {
-          materialIndex = 2; 
+          materialIndex = 2;
         } else {
-          materialIndex = 3; 
+          materialIndex = 3;
         }
-        
+
         let material = asteroidTypes[materialIndex].clone();
         const asteroidMesh = new THREE.Mesh(geometry, material);
-        
-        let radius, angle, height, isInGap = true;
-        
+
+        let radius,
+          angle,
+          height,
+          isInGap = true;
+
         while (isInGap) {
           const radialRandom = Math.random();
-          const distributionPower = 0.5; 
-          
-          const normalizedRadius = Math.pow(Math.sin(radialRandom * Math.PI), distributionPower);
-          radius = beltInnerRadius + normalizedRadius * (beltOuterRadius - beltInnerRadius);
-          
+          const distributionPower = 0.5;
+
+          const normalizedRadius = Math.pow(
+            Math.sin(radialRandom * Math.PI),
+            distributionPower
+          );
+          radius =
+            beltInnerRadius +
+            normalizedRadius * (beltOuterRadius - beltInnerRadius);
+
           isInGap = false;
           for (const gap of kirkwoodGaps) {
             if (Math.abs(radius - gap.position) < gap.width) {
@@ -2151,76 +2559,78 @@ const asteroidBeltRef = useRef(null);
               break;
             }
           }
-          
+
           if (isInGap && Math.random() < 0.2) {
             isInGap = false;
           }
-          
+
           if (!isInGap) {
             angle = Math.random() * Math.PI * 2;
-            
-            const normalizedRadialPos = (radius - beltInnerRadius) / (beltOuterRadius - beltInnerRadius);
-            const maxHeight = beltThickness * (1 - Math.pow(2 * normalizedRadialPos - 1, 2));
+
+            const normalizedRadialPos =
+              (radius - beltInnerRadius) / (beltOuterRadius - beltInnerRadius);
+            const maxHeight =
+              beltThickness * (1 - Math.pow(2 * normalizedRadialPos - 1, 2));
             height = (Math.random() - 0.5) * maxHeight;
           }
         }
-        
-        if (Math.random() < 0.3) { 
+
+        if (Math.random() < 0.3) {
           let familyFound = false;
-          
+
           for (let j = Math.max(0, i - 100); j < i && !familyFound; j++) {
             if (asteroids[j] && Math.random() < 0.4) {
               radius = asteroids[j].radius + (Math.random() - 0.5) * 2;
               angle = asteroids[j].angle + (Math.random() - 0.5) * 0.3;
               height = asteroids[j].height + (Math.random() - 0.5) * 1;
-              
+
               material = asteroidTypes[materialIndex].clone();
-              
+
               familyFound = true;
             }
           }
         }
-        
+
         const x = radius * Math.cos(angle);
         const y = height;
         const z = radius * Math.sin(angle);
-        
+
         asteroidMesh.position.set(x, y, z);
-        
+
         const sizeRandom = Math.random();
         let scaleFactor;
-        
-        if (sizeRandom > 0.998) {  
+
+        if (sizeRandom > 0.998) {
           scaleFactor = Math.random() * 0.6 + 1.7;
-        } else if (sizeRandom > 0.99) {  
+        } else if (sizeRandom > 0.99) {
           scaleFactor = Math.random() * 0.3 + 1.3;
-        } else if (sizeRandom > 0.97) {  
+        } else if (sizeRandom > 0.97) {
           scaleFactor = Math.random() * 0.3 + 0.9;
-        } else if (sizeRandom > 0.90) {  
+        } else if (sizeRandom > 0.9) {
           scaleFactor = Math.random() * 0.2 + 0.7;
-        } else if (sizeRandom > 0.70) {  
+        } else if (sizeRandom > 0.7) {
           scaleFactor = Math.random() * 0.2 + 0.5;
-        } else {  
+        } else {
           scaleFactor = Math.random() * 0.3 + 0.2;
         }
-        
+
         asteroidMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
-        
+
         asteroidMesh.rotation.x = Math.random() * Math.PI * 2;
         asteroidMesh.rotation.y = Math.random() * Math.PI * 2;
         asteroidMesh.rotation.z = Math.random() * Math.PI * 2;
-        
-        const orbitSpeed = 0.0006 * Math.pow(radius / beltOuterRadius, -1.5); 
-        
-        const baseRotationSpeed = 0.002 / scaleFactor; 
+
+        const orbitSpeed = 0.0006 * Math.pow(radius / beltOuterRadius, -1.5);
+
+        const baseRotationSpeed = 0.002 / scaleFactor;
         const rotationSpeed = {
           x: (Math.random() - 0.5) * baseRotationSpeed,
           y: (Math.random() - 0.5) * baseRotationSpeed,
           z: (Math.random() - 0.5) * baseRotationSpeed,
         };
-        
+
         asteroidBelt.add(asteroidMesh);
-        
+
         asteroids.push({
           mesh: asteroidMesh,
           orbitSpeed: orbitSpeed,
@@ -2229,34 +2639,327 @@ const asteroidBeltRef = useRef(null);
           height: height,
           angle: angle,
           size: scaleFactor,
-          type: materialIndex
+          type: materialIndex,
         });
       }
-      
+
       asteroidBeltRef.current = asteroidBelt;
       asteroidsRef.current = asteroids;
     };
-        
-    createAsteroidBelt()
+
+    createAsteroidBelt();
 
     if (planets["Saturn"] && planets["Saturn"].data.rings) {
       const saturnMesh = planets["Saturn"].mesh;
 
-      if (isLowPerformance) {
-        const ringGeometry = new THREE.RingGeometry(5, 10, 64);
-        const ringMaterial = new THREE.MeshBasicMaterial({
-          color: 0xfae5c0,
+      if (planets["Saturn"].data.enhancedRings && !isLowPerformance) {
+        const ringsGroup = new THREE.Group();
+        saturnMesh.add(ringsGroup);
+
+        const createRing = (innerRadius, outerRadius, segments, shader) => {
+          const ringGeometry = new THREE.RingGeometry(
+            innerRadius,
+            outerRadius,
+            segments,
+            8
+          );
+
+          const pos = ringGeometry.attributes.position;
+          const v3 = new THREE.Vector3();
+          const uv = [];
+
+          for (let i = 0; i < pos.count; i++) {
+            v3.fromBufferAttribute(pos, i);
+            const distance = Math.sqrt(v3.x * v3.x + v3.y * v3.y + v3.z * v3.z);
+            const normalizedDistance =
+              (distance - innerRadius) / (outerRadius - innerRadius);
+            uv.push(normalizedDistance, 0);
+          }
+
+          ringGeometry.setAttribute(
+            "uv",
+            new THREE.Float32BufferAttribute(uv, 2)
+          );
+
+          const ringMesh = new THREE.Mesh(ringGeometry, shader);
+          ringMesh.rotation.x = Math.PI / 2;
+          ringsGroup.add(ringMesh);
+
+          return ringMesh;
+        };
+
+        const createRingShader = (params) => {
+          return new THREE.ShaderMaterial({
+            uniforms: {
+              time: { value: 0 },
+              innerColor: {
+                value: new THREE.Color(params.innerColor || 0xfae5c0),
+              },
+              outerColor: {
+                value: new THREE.Color(params.outerColor || 0xc2905c),
+              },
+              opacity: { value: params.opacity || 0.9 },
+              detail: { value: params.detail || 1.0 },
+              noiseStrength: { value: params.noiseStrength || 0.4 },
+              twistStrength: { value: params.twistStrength || 0.5 },
+            },
+            vertexShader: `
+              varying vec2 vUv;
+              varying vec3 vPosition;
+              varying vec3 vNormal;
+              
+              void main() {
+                vUv = uv;
+                vPosition = position;
+                vNormal = normalize(normalMatrix * normal);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: `
+              uniform float time;
+              uniform vec3 innerColor;
+              uniform vec3 outerColor;
+              uniform float opacity;
+              uniform float detail;
+              uniform float noiseStrength;
+              uniform float twistStrength;
+              
+              varying vec2 vUv;
+              varying vec3 vPosition;
+              varying vec3 vNormal;
+              
+              float hash(vec2 p) {
+                return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+              }
+              
+              float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                
+                float a = hash(i);
+                float b = hash(i + vec2(1.0, 0.0));
+                float c = hash(i + vec2(0.0, 1.0));
+                float d = hash(i + vec2(1.0, 1.0));
+                
+                return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+              }
+              
+              float fbm(vec2 p) {
+                float value = 0.0;
+                float amplitude = 0.5;
+                float frequency = 1.0;
+                
+                for (int i = 0; i < 5; i++) {
+                  value += amplitude * noise(p * frequency);
+                  amplitude *= 0.5;
+                  frequency *= 2.0;
+                }
+                
+                return value;
+              }
+              
+              void main() {
+                float r = vUv.x;
+                
+                float gaps = 0.0;
+                
+                if (r > 0.48 && r < 0.55) {
+                  gaps = smoothstep(0.48, 0.5, r) - smoothstep(0.53, 0.55, r);
+                  gaps = pow(gaps, 0.5) * 0.9;
+                }
+                
+                if (r > 0.73 && r < 0.75) {
+                  gaps += smoothstep(0.73, 0.735, r) - smoothstep(0.745, 0.75, r);
+                  gaps = min(1.0, gaps);
+                }
+                
+                if (r > 0.88 && r < 0.89) {
+                  gaps += smoothstep(0.88, 0.883, r) - smoothstep(0.887, 0.89, r);
+                  gaps = min(1.0, gaps);
+                }
+                
+                if (r > 0.3 && r < 0.32) {
+                  gaps += smoothstep(0.3, 0.305, r) - smoothstep(0.315, 0.32, r);
+                  gaps = min(1.0, gaps);
+                }
+                
+                float ringletAngularFreq = 500.0 * detail;
+                float angularPos = atan(vPosition.z, vPosition.x);
+                float ringletPattern = sin(angularPos * ringletAngularFreq + r * 100.0 * twistStrength + time * 0.1);
+                
+                float densityWaves = sin(r * 120.0 * detail + ringletPattern * 0.1 + time * 0.05);
+                densityWaves = densityWaves * 0.5 + 0.5;
+                
+                float detailNoise = fbm(vec2(angularPos * 20.0, r * 200.0 * detail + time * 0.02));
+                float largeNoise = fbm(vec2(angularPos * 5.0 + time * 0.01, r * 30.0));
+                
+                float combinedNoise = mix(detailNoise, largeNoise, 0.5) * noiseStrength;
+                
+                float ringDensity = 1.0;
+                
+                if (r < 0.4) {
+                  ringDensity = mix(0.3, 0.7, r / 0.4);
+                } 
+                else if (r < 0.55) {
+                  ringDensity = 0.9;
+                } 
+                else {
+                  ringDensity = mix(0.8, 0.7, (r - 0.55) / 0.45);
+                }
+                
+                ringDensity *= (0.8 + detailNoise * 0.4);
+                
+                float spokeEffect = 0.0;
+                for (int i = 0; i < 5; i++) {
+                  float idx = float(i);
+                  float spokeLoc = mod(time * 0.02 + idx * 1.2, 6.28);
+                  float spokeWidth = 0.2 + idx * 0.05;
+                  float spokeDist = abs(angularPos - spokeLoc);
+                  spokeDist = min(spokeDist, 6.28 - spokeDist);
+                  
+                  spokeEffect += (1.0 - smoothstep(0.0, spokeWidth, spokeDist)) * 0.2;
+                }
+                spokeEffect *= smoothstep(0.4, 0.5, r) - smoothstep(0.7, 0.8, r);
+                
+                float finalDensity = ringDensity;
+                finalDensity = max(0.0, finalDensity - gaps);
+                finalDensity *= (0.85 + densityWaves * 0.15);
+                
+                vec3 ringColor = mix(innerColor, outerColor, r * r);
+                
+                ringColor = mix(ringColor, vec3(0.9, 0.9, 0.85), spokeEffect);
+                
+                vec3 finalColor = ringColor;
+                finalColor *= (0.8 + combinedNoise * 0.4);
+                
+                vec3 viewDirection = normalize(cameraPosition - vPosition);
+                float specularIntensity = pow(max(0.0, dot(reflect(-vec3(0.0, 0.0, 1.0), vNormal), viewDirection)), 50.0);
+                
+                finalColor += vec3(0.8, 0.7, 0.6) * specularIntensity * 0.2;
+                
+                float lightFactor = max(0.2, abs(vNormal.z)) * 1.2;
+                finalColor *= lightFactor;
+                
+                float finalOpacity = finalDensity * opacity;
+                finalOpacity = max(0.0, min(1.0, finalOpacity));
+                
+                gl_FragColor = vec4(finalColor, finalOpacity);
+              }
+            `,
+            side: THREE.DoubleSide,
+            transparent: true,
+            blending: THREE.CustomBlending,
+            blendSrc: THREE.SrcAlphaFactor,
+            blendDst: THREE.OneMinusSrcAlphaFactor,
+            blendEquation: THREE.AddEquation,
+            depthWrite: false,
+          });
+        };
+
+        createRing(
+          5,
+          7.2,
+          128,
+          createRingShader({
+            innerColor: 0xb19271,
+            outerColor: 0xd7c89e,
+            opacity: 0.7,
+            detail: 0.9,
+            noiseStrength: 0.5,
+            twistStrength: 0.3,
+          })
+        );
+
+        createRing(
+          7.2,
+          8.5,
+          128,
+          createRingShader({
+            innerColor: 0xe5d5b5,
+            outerColor: 0xf0e0c0,
+            opacity: 0.9,
+            detail: 1.3,
+            noiseStrength: 0.6,
+            twistStrength: 0.5,
+          })
+        );
+
+        createRing(
+          8.5,
+          10,
+          128,
+          createRingShader({
+            innerColor: 0xd9c7a0,
+            outerColor: 0xc2aa85,
+            opacity: 0.8,
+            detail: 1.1,
+            noiseStrength: 0.4,
+            twistStrength: 0.4,
+          })
+        );
+
+        createRing(
+          10.1,
+          10.4,
+          128,
+          createRingShader({
+            innerColor: 0xcdb896,
+            outerColor: 0xbaa37e,
+            opacity: 0.6,
+            detail: 1.5,
+            noiseStrength: 0.7,
+            twistStrength: 0.9,
+          })
+        );
+
+        const ringHazeGeometry = new THREE.RingGeometry(4.8, 10.5, 128, 2);
+        const ringHazeMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            time: { value: 0 },
+          },
+          vertexShader: `
+            varying vec2 vUv;
+            
+            void main() {
+              vUv = uv;
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: `
+            uniform float time;
+            varying vec2 vUv;
+            
+            void main() {
+              float r = vUv.x;
+              float alpha = (1.0 - abs(r * 2.0 - 1.0)) * 0.15;
+              
+              if (r < 0.4) alpha *= r / 0.4;
+              if (r > 0.9) alpha *= (1.0 - (r - 0.9) / 0.1);
+              
+              vec3 hazeColor = vec3(0.95, 0.9, 0.8);
+              gl_FragColor = vec4(hazeColor, alpha);
+            }
+          `,
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: 0.7,
           blending: THREE.AdditiveBlending,
+          depthWrite: false,
         });
 
-        const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
-        ringMesh.rotation.x = Math.PI / 2;
-        saturnMesh.add(ringMesh);
+        const ringHaze = new THREE.Mesh(ringHazeGeometry, ringHazeMaterial);
+        ringHaze.rotation.x = Math.PI / 2;
+        ringsGroup.add(ringHaze);
+
+        planets["Saturn"].ringMaterials = ringsGroup.children.map(
+          (child) => child.material
+        );
       } else {
-        const ringGeometry = new THREE.RingGeometry(5, 10, 128, 8);
+        const ringGeometry = new THREE.RingGeometry(
+          5,
+          10,
+          isLowPerformance ? 64 : 128
+        );
 
         const pos = ringGeometry.attributes.position;
         const v3 = new THREE.Vector3();
@@ -2300,7 +3003,7 @@ const asteroidBeltRef = useRef(null);
                   smoothstep(0.6, 0.7, vUv.x) +
                   smoothstep(0.75, 0.8, vUv.x) -
                   smoothstep(0.85, 0.95, vUv.x);
-                  
+                      
               float noise = sin(vUv.x * 100.0 + time * 0.2) * 0.5 + 0.5;
               float detail = sin(vUv.x * 200.0) * 0.5 + 0.5;
               
@@ -2332,6 +3035,8 @@ const asteroidBeltRef = useRef(null);
         const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
         ringMesh.rotation.x = Math.PI / 2;
         saturnMesh.add(ringMesh);
+
+        planets["Saturn"].ringMaterials = [ringMaterial];
       }
     }
 
@@ -2684,9 +3389,12 @@ const asteroidBeltRef = useRef(null);
       }
 
       if (starsRef.current) {
-        starsRef.current.rotation.y += 0.0005 * delta * 60 * animationSpeedRef.current;
-        starsRef.current.rotation.x += 0.0001 * delta * 60 * animationSpeedRef.current;
-        starsRef.current.rotation.z += 0.0002 * delta * 60 * animationSpeedRef.current;
+        starsRef.current.rotation.y +=
+          0.0005 * delta * 60 * animationSpeedRef.current;
+        starsRef.current.rotation.x +=
+          0.0001 * delta * 60 * animationSpeedRef.current;
+        starsRef.current.rotation.z +=
+          0.0002 * delta * 60 * animationSpeedRef.current;
       }
 
       if (
@@ -2880,6 +3588,25 @@ const asteroidBeltRef = useRef(null);
             child.material.uniforms.time.value += delta;
           }
         });
+
+        if (planets["Saturn"].ringMaterials) {
+          planets["Saturn"].ringMaterials.forEach((material) => {
+            if (material.uniforms && material.uniforms.time) {
+              material.uniforms.time.value += delta;
+            }
+          });
+        }
+      }
+
+      if (planets["Jupiter"] && planets["Jupiter"].mesh) {
+        const jupiterMesh = planets["Jupiter"].mesh;
+        if (
+          jupiterMesh.material &&
+          jupiterMesh.material.uniforms &&
+          jupiterMesh.material.uniforms.time
+        ) {
+          jupiterMesh.material.uniforms.time.value += delta;
+        }
       }
 
       if (sceneRef.current && sceneRef.current.userData.animateGalaxies) {
@@ -2947,47 +3674,26 @@ const asteroidBeltRef = useRef(null);
 
       controlsRef.current.update();
 
-      if (cometsRef.current && cometsRef.current.length > 0) {
-        const currentSpeed = animationSpeedRef.current;
-        
-        cometsRef.current.forEach((comet) => {
-          comet.angle += comet.speed * delta * currentSpeed * 60;
-          
-          const a = comet.radius;
-          const c = comet.radius * comet.eccentricity;
-          const b = Math.sqrt(a * a - c * c);
-          
-          const x = a * Math.cos(comet.angle);
-          const z = b * Math.sin(comet.angle);
-          
-          comet.mesh.position.set(x, 0, z);
-          
-          const sunDirection = new THREE.Vector3().subVectors(
-            new THREE.Vector3(0, 0, 0),
-            comet.mesh.getWorldPosition(new THREE.Vector3())
-          ).normalize();
-          
-          comet.tail.lookAt(comet.mesh.position.clone().add(sunDirection));
-        });
-      }
-      
       if (asteroidsRef.current.length > 0) {
         const currentSpeed = animationSpeedRef.current;
-        
+
         if (asteroidBeltRef.current) {
           asteroidBeltRef.current.rotation.y += 0.0002 * delta * currentSpeed;
         }
-        
+
         asteroidsRef.current.forEach((asteroid) => {
-          asteroid.mesh.rotation.x += asteroid.rotationSpeed.x * delta * currentSpeed;
-          asteroid.mesh.rotation.y += asteroid.rotationSpeed.y * delta * currentSpeed;
-          asteroid.mesh.rotation.z += asteroid.rotationSpeed.z * delta * currentSpeed;
-          
+          asteroid.mesh.rotation.x +=
+            asteroid.rotationSpeed.x * delta * currentSpeed;
+          asteroid.mesh.rotation.y +=
+            asteroid.rotationSpeed.y * delta * currentSpeed;
+          asteroid.mesh.rotation.z +=
+            asteroid.rotationSpeed.z * delta * currentSpeed;
+
           asteroid.angle += asteroid.orbitSpeed * delta * currentSpeed;
-          
+
           const x = asteroid.radius * Math.cos(asteroid.angle);
           const z = asteroid.radius * Math.sin(asteroid.angle);
-          
+
           asteroid.mesh.position.x = x;
           asteroid.mesh.position.z = z;
         });
