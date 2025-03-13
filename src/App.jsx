@@ -56,6 +56,9 @@ const VoidVoyager = () => {
   const lastFrameTimeRef = useRef(0);
   const frameCountRef = useRef(0);
   const pointerMoveTimeoutRef = useRef(null);
+  const cometsRef = useRef([]);
+const asteroidsRef = useRef([]);
+const asteroidBeltRef = useRef(null);
 
   const visibilityRef = useRef({
     showPlanets: true,
@@ -1867,6 +1870,375 @@ const VoidVoyager = () => {
       moons[planet.name] = planetMoons;
     });
 
+    const createAsteroidBelt = () => {
+      const asteroids = [];
+      const numberOfAsteroids = isMobile ? 1000 : 3500;
+      
+      const asteroidBelt = new THREE.Object3D();
+      scene.add(asteroidBelt);
+      
+      const beltInnerRadius = 65; 
+      const beltOuterRadius = 75; 
+      const beltThickness = 5;    
+      
+      const kirkwoodGaps = [
+        { position: 66.7, width: 0.5 }, 
+        { position: 68.8, width: 0.6 }, 
+        { position: 71.8, width: 0.7 }, 
+        { position: 72.8, width: 0.5 }, 
+        { position: 73.7, width: 0.8 }  
+      ];
+      
+      const createAsteroidTypes = () => {
+        const types = [];
+        
+        const createAsteroidTexture = (baseColor, details, bumpiness) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 256;
+          canvas.height = 256;
+          const ctx = canvas.getContext('2d');
+          
+          ctx.fillStyle = baseColor;
+          ctx.fillRect(0, 0, 256, 256);
+          
+          for (let i = 0; i < 5000; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            const radius = Math.random() * 2 + 0.5;
+            
+            const shade = Math.floor(Math.random() * 40 - 20);
+            ctx.fillStyle = adjustColor(baseColor, shade);
+            
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          
+          for (let i = 0; i < details; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            const radius = Math.random() * 20 + 5;
+            
+            const shade = Math.floor(Math.random() * 30 - 15);
+            ctx.fillStyle = adjustColor(baseColor, shade - 20);
+            
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          
+          for (let i = 0; i < bumpiness; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            const radius = Math.random() * 12 + 3;
+            const shade = Math.floor(Math.random() * 60 - 30);
+            
+            ctx.fillStyle = adjustColor(baseColor, shade - 30);
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.strokeStyle = adjustColor(baseColor, 15);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          
+          const texture = new THREE.CanvasTexture(canvas);
+          
+          const normalCanvas = document.createElement('canvas');
+          normalCanvas.width = 256;
+          normalCanvas.height = 256;
+          const normalCtx = normalCanvas.getContext('2d');
+          
+          normalCtx.fillStyle = '#8080ff';
+          normalCtx.fillRect(0, 0, 256, 256);
+          
+          for (let i = 0; i < bumpiness; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            const radius = Math.random() * 12 + 3;
+            
+            const gradient = normalCtx.createRadialGradient(x, y, 0, x, y, radius);
+            gradient.addColorStop(0, '#4040ff'); 
+            gradient.addColorStop(0.7, '#8080ff'); 
+            gradient.addColorStop(0.9, '#c0c0ff'); 
+            gradient.addColorStop(1, '#8080ff'); 
+            
+            normalCtx.fillStyle = gradient;
+            normalCtx.beginPath();
+            normalCtx.arc(x, y, radius, 0, Math.PI * 2);
+            normalCtx.fill();
+          }
+          
+          const normalMap = new THREE.CanvasTexture(normalCanvas);
+          
+          return { map: texture, normalMap: normalMap };
+        };
+        
+        function adjustColor(hexColor, amount) {
+          const r = parseInt(hexColor.slice(1, 3), 16);
+          const g = parseInt(hexColor.slice(3, 5), 16);
+          const b = parseInt(hexColor.slice(5, 7), 16);
+          
+          return `rgb(${Math.min(255, Math.max(0, r + amount))}, 
+                      ${Math.min(255, Math.max(0, g + amount))}, 
+                      ${Math.min(255, Math.max(0, b + amount))})`;
+        }
+        
+        const cTypeMaps = createAsteroidTexture('#32302e', 15, 8);
+        types.push(new THREE.MeshStandardMaterial({
+          map: cTypeMaps.map,
+          normalMap: cTypeMaps.normalMap,
+          roughness: 0.95,
+          metalness: 0.05,
+          flatShading: true
+        }));
+        
+        const sTypeMaps = createAsteroidTexture('#6b5c4d', 20, 12);
+        types.push(new THREE.MeshStandardMaterial({
+          map: sTypeMaps.map,
+          normalMap: sTypeMaps.normalMap,
+          roughness: 0.85,
+          metalness: 0.15,
+          flatShading: true
+        }));
+        
+        const mTypeMaps = createAsteroidTexture('#52504e', 10, 5);
+        types.push(new THREE.MeshStandardMaterial({
+          map: mTypeMaps.map,
+          normalMap: mTypeMaps.normalMap,
+          roughness: 0.6,
+          metalness: 0.7,
+          flatShading: true
+        }));
+        
+        const vTypeMaps = createAsteroidTexture('#4a3c37', 12, 10);
+        types.push(new THREE.MeshStandardMaterial({
+          map: vTypeMaps.map,
+          normalMap: vTypeMaps.normalMap,
+          roughness: 0.75,
+          metalness: 0.25,
+          flatShading: true
+        }));
+        
+        return types;
+      };
+      
+      const asteroidTypes = createAsteroidTypes();
+      
+      const geometryPool = [];
+      
+      for (let i = 0; i < 12; i++) {
+        const baseSize = Math.random() * 0.3 + 0.2;
+        let asteroidGeometry;
+        
+        const shapeType = Math.floor(Math.random() * 5);
+        
+        if (shapeType === 0) {
+          asteroidGeometry = new THREE.IcosahedronGeometry(baseSize, 1);
+        } else if (shapeType === 1) {
+          asteroidGeometry = new THREE.DodecahedronGeometry(baseSize, 0);
+        } else if (shapeType === 2) {
+          asteroidGeometry = new THREE.TetrahedronGeometry(baseSize, 1);
+        } else if (shapeType === 3) {
+          asteroidGeometry = new THREE.OctahedronGeometry(baseSize, 1);
+        } else {
+          const geo1 = new THREE.IcosahedronGeometry(baseSize, 0);
+          const geo2 = new THREE.DodecahedronGeometry(baseSize * 0.8, 0);
+          
+          const offset = new THREE.Vector3(
+            (Math.random() - 0.5) * baseSize * 0.5,
+            (Math.random() - 0.5) * baseSize * 0.5,
+            (Math.random() - 0.5) * baseSize * 0.5
+          );
+          
+          const mergedGeometry = mergeBufferGeometries([geo1, geo2], false);
+          asteroidGeometry = mergedGeometry;
+        }
+        
+        const positions = asteroidGeometry.attributes.position;
+        for (let j = 0; j < positions.count; j++) {
+          const vertex = new THREE.Vector3();
+          vertex.fromBufferAttribute(positions, j);
+          
+          const distortion = 0.2 + Math.random() * 0.3;
+          vertex.x += (Math.random() - 0.5) * distortion * baseSize;
+          vertex.y += (Math.random() - 0.5) * distortion * baseSize;
+          vertex.z += (Math.random() - 0.5) * distortion * baseSize;
+          
+          positions.setXYZ(j, vertex.x, vertex.y, vertex.z);
+        }
+        
+        positions.needsUpdate = true;
+        asteroidGeometry.computeVertexNormals();
+        
+        geometryPool.push(asteroidGeometry);
+      }
+      
+      function mergeBufferGeometries(geometries) {
+        const totalVertices = geometries.reduce((acc, geo) => acc + geo.attributes.position.count, 0);
+        const positions = new Float32Array(totalVertices * 3);
+        const normals = new Float32Array(totalVertices * 3);
+        const uvs = new Float32Array(totalVertices * 2);
+        
+        let offset = 0;
+        
+        for (let i = 0; i < geometries.length; i++) {
+          const geo = geometries[i];
+          const posAttr = geo.attributes.position;
+          const normAttr = geo.attributes.normal;
+          const uvAttr = geo.attributes.uv;
+          
+          for (let j = 0; j < posAttr.count; j++) {
+            positions[(offset + j) * 3] = posAttr.getX(j);
+            positions[(offset + j) * 3 + 1] = posAttr.getY(j);
+            positions[(offset + j) * 3 + 2] = posAttr.getZ(j);
+            
+            normals[(offset + j) * 3] = normAttr.getX(j);
+            normals[(offset + j) * 3 + 1] = normAttr.getY(j);
+            normals[(offset + j) * 3 + 2] = normAttr.getZ(j);
+            
+            if (uvAttr) {
+              uvs[(offset + j) * 2] = uvAttr.getX(j);
+              uvs[(offset + j) * 2 + 1] = uvAttr.getY(j);
+            }
+          }
+          
+          offset += posAttr.count;
+        }
+        
+        const mergedGeometry = new THREE.BufferGeometry();
+        mergedGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        mergedGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        mergedGeometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+        
+        return mergedGeometry;
+      }
+      
+      for (let i = 0; i < numberOfAsteroids; i++) {
+        const geometry = geometryPool[Math.floor(Math.random() * geometryPool.length)];
+        
+        let materialIndex;
+        const typeRandom = Math.random();
+        if (typeRandom < 0.75) {
+          materialIndex = 0; 
+        } else if (typeRandom < 0.92) {
+          materialIndex = 1; 
+        } else if (typeRandom < 0.99) {
+          materialIndex = 2; 
+        } else {
+          materialIndex = 3; 
+        }
+        
+        let material = asteroidTypes[materialIndex].clone();
+        const asteroidMesh = new THREE.Mesh(geometry, material);
+        
+        let radius, angle, height, isInGap = true;
+        
+        while (isInGap) {
+          const radialRandom = Math.random();
+          const distributionPower = 0.5; 
+          
+          const normalizedRadius = Math.pow(Math.sin(radialRandom * Math.PI), distributionPower);
+          radius = beltInnerRadius + normalizedRadius * (beltOuterRadius - beltInnerRadius);
+          
+          isInGap = false;
+          for (const gap of kirkwoodGaps) {
+            if (Math.abs(radius - gap.position) < gap.width) {
+              isInGap = true;
+              break;
+            }
+          }
+          
+          if (isInGap && Math.random() < 0.2) {
+            isInGap = false;
+          }
+          
+          if (!isInGap) {
+            angle = Math.random() * Math.PI * 2;
+            
+            const normalizedRadialPos = (radius - beltInnerRadius) / (beltOuterRadius - beltInnerRadius);
+            const maxHeight = beltThickness * (1 - Math.pow(2 * normalizedRadialPos - 1, 2));
+            height = (Math.random() - 0.5) * maxHeight;
+          }
+        }
+        
+        if (Math.random() < 0.3) { 
+          let familyFound = false;
+          
+          for (let j = Math.max(0, i - 100); j < i && !familyFound; j++) {
+            if (asteroids[j] && Math.random() < 0.4) {
+              radius = asteroids[j].radius + (Math.random() - 0.5) * 2;
+              angle = asteroids[j].angle + (Math.random() - 0.5) * 0.3;
+              height = asteroids[j].height + (Math.random() - 0.5) * 1;
+              
+              material = asteroidTypes[materialIndex].clone();
+              
+              familyFound = true;
+            }
+          }
+        }
+        
+        const x = radius * Math.cos(angle);
+        const y = height;
+        const z = radius * Math.sin(angle);
+        
+        asteroidMesh.position.set(x, y, z);
+        
+        const sizeRandom = Math.random();
+        let scaleFactor;
+        
+        if (sizeRandom > 0.998) {  
+          scaleFactor = Math.random() * 0.6 + 1.7;
+        } else if (sizeRandom > 0.99) {  
+          scaleFactor = Math.random() * 0.3 + 1.3;
+        } else if (sizeRandom > 0.97) {  
+          scaleFactor = Math.random() * 0.3 + 0.9;
+        } else if (sizeRandom > 0.90) {  
+          scaleFactor = Math.random() * 0.2 + 0.7;
+        } else if (sizeRandom > 0.70) {  
+          scaleFactor = Math.random() * 0.2 + 0.5;
+        } else {  
+          scaleFactor = Math.random() * 0.3 + 0.2;
+        }
+        
+        asteroidMesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        
+        asteroidMesh.rotation.x = Math.random() * Math.PI * 2;
+        asteroidMesh.rotation.y = Math.random() * Math.PI * 2;
+        asteroidMesh.rotation.z = Math.random() * Math.PI * 2;
+        
+        const orbitSpeed = 0.0006 * Math.pow(radius / beltOuterRadius, -1.5); 
+        
+        const baseRotationSpeed = 0.002 / scaleFactor; 
+        const rotationSpeed = {
+          x: (Math.random() - 0.5) * baseRotationSpeed,
+          y: (Math.random() - 0.5) * baseRotationSpeed,
+          z: (Math.random() - 0.5) * baseRotationSpeed,
+        };
+        
+        asteroidBelt.add(asteroidMesh);
+        
+        asteroids.push({
+          mesh: asteroidMesh,
+          orbitSpeed: orbitSpeed,
+          rotationSpeed: rotationSpeed,
+          radius: radius,
+          height: height,
+          angle: angle,
+          size: scaleFactor,
+          type: materialIndex
+        });
+      }
+      
+      asteroidBeltRef.current = asteroidBelt;
+      asteroidsRef.current = asteroids;
+    };
+        
+    createAsteroidBelt()
+
     if (planets["Saturn"] && planets["Saturn"].data.rings) {
       const saturnMesh = planets["Saturn"].mesh;
 
@@ -2574,6 +2946,52 @@ const VoidVoyager = () => {
       });
 
       controlsRef.current.update();
+
+      if (cometsRef.current && cometsRef.current.length > 0) {
+        const currentSpeed = animationSpeedRef.current;
+        
+        cometsRef.current.forEach((comet) => {
+          comet.angle += comet.speed * delta * currentSpeed * 60;
+          
+          const a = comet.radius;
+          const c = comet.radius * comet.eccentricity;
+          const b = Math.sqrt(a * a - c * c);
+          
+          const x = a * Math.cos(comet.angle);
+          const z = b * Math.sin(comet.angle);
+          
+          comet.mesh.position.set(x, 0, z);
+          
+          const sunDirection = new THREE.Vector3().subVectors(
+            new THREE.Vector3(0, 0, 0),
+            comet.mesh.getWorldPosition(new THREE.Vector3())
+          ).normalize();
+          
+          comet.tail.lookAt(comet.mesh.position.clone().add(sunDirection));
+        });
+      }
+      
+      if (asteroidsRef.current.length > 0) {
+        const currentSpeed = animationSpeedRef.current;
+        
+        if (asteroidBeltRef.current) {
+          asteroidBeltRef.current.rotation.y += 0.0002 * delta * currentSpeed;
+        }
+        
+        asteroidsRef.current.forEach((asteroid) => {
+          asteroid.mesh.rotation.x += asteroid.rotationSpeed.x * delta * currentSpeed;
+          asteroid.mesh.rotation.y += asteroid.rotationSpeed.y * delta * currentSpeed;
+          asteroid.mesh.rotation.z += asteroid.rotationSpeed.z * delta * currentSpeed;
+          
+          asteroid.angle += asteroid.orbitSpeed * delta * currentSpeed;
+          
+          const x = asteroid.radius * Math.cos(asteroid.angle);
+          const z = asteroid.radius * Math.sin(asteroid.angle);
+          
+          asteroid.mesh.position.x = x;
+          asteroid.mesh.position.z = z;
+        });
+      }
 
       renderer.render(scene, camera);
     };
