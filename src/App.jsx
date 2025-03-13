@@ -2311,6 +2311,12 @@ const VoidVoyager = () => {
         sunGlow.material.uniforms.time.value += delta;
       }
 
+      if (starsRef.current) {
+        starsRef.current.rotation.y += 0.0005 * delta * 60 * animationSpeedRef.current;
+        starsRef.current.rotation.x += 0.0001 * delta * 60 * animationSpeedRef.current;
+        starsRef.current.rotation.z += 0.0002 * delta * 60 * animationSpeedRef.current;
+      }
+
       if (
         followingPlanetRef.current &&
         planetsRef.current[followingPlanetRef.current]
