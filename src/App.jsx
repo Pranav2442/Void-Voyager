@@ -6789,6 +6789,7 @@ const VoidVoyager = () => {
                   maxHeight: "300px",
                   overflowY: "auto",
                   backdropFilter: "blur(10px)",
+                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(59, 130, 246, 0.3)"
                 }}
               >
                 <div
@@ -6796,6 +6797,44 @@ const VoidVoyager = () => {
                   onClick={() => {
                     setSelectedPlanet(null);
                     setIsDropdownOpen(false);
+                    
+                    // Reset camera position to initial position
+                    if (cameraRef.current && controlsRef.current) {
+                      const initialPos = new THREE.Vector3(0, 30, 100);
+                      const initialTarget = new THREE.Vector3(0, 0, 0);
+                      
+                      // Cancel any existing animations
+                      if (focusAnimationIdRef.current) {
+                        cancelAnimationFrame(focusAnimationIdRef.current);
+                        focusAnimationIdRef.current = null;
+                      }
+                      
+                      // Reset the following planet reference
+                      followingPlanetRef.current = null;
+                      
+                      // Animate to initial position
+                      let frame = 0;
+                      const totalFrames = 100;
+                      const startPos = cameraRef.current.position.clone();
+                      const startTarget = controlsRef.current.target.clone();
+                      
+                      const animateReset = () => {
+                        if (frame <= totalFrames) {
+                          const progress = frame / totalFrames;
+                          const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+                          
+                          cameraRef.current.position.lerpVectors(startPos, initialPos, easeOutCubic);
+                          controlsRef.current.target.lerpVectors(startTarget, initialTarget, easeOutCubic);
+                          controlsRef.current.update();
+                          
+                          frame++;
+                          focusAnimationIdRef.current = requestAnimationFrame(animateReset);
+                        }
+                      };
+                      
+                      animateReset();
+                    }
+                    
                     controlsRef.current.enableDamping = true;
                     controlsRef.current.enableRotate = true;
                     controlsRef.current.enableZoom = true;
