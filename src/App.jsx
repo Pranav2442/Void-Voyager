@@ -6452,9 +6452,10 @@ const VoidVoyager = () => {
     setControlsOpen(!controlsOpen);
   };
 
-  return (
+  return (<>
+    <GoogleAnalytics />
     <div className="w-full h-screen bg-black relative overflow-hidden">
-      <GoogleAnalytics />
+      
       <div ref={mountRef} className="w-full h-full" />
 
       {hoveredPlanet && (
@@ -6798,21 +6799,17 @@ const VoidVoyager = () => {
                     setSelectedPlanet(null);
                     setIsDropdownOpen(false);
                     
-                    // Reset camera position to initial position
                     if (cameraRef.current && controlsRef.current) {
                       const initialPos = new THREE.Vector3(0, 30, 100);
                       const initialTarget = new THREE.Vector3(0, 0, 0);
                       
-                      // Cancel any existing animations
                       if (focusAnimationIdRef.current) {
                         cancelAnimationFrame(focusAnimationIdRef.current);
                         focusAnimationIdRef.current = null;
                       }
                       
-                      // Reset the following planet reference
                       followingPlanetRef.current = null;
                       
-                      // Animate to initial position
                       let frame = 0;
                       const totalFrames = 100;
                       const startPos = cameraRef.current.position.clone();
@@ -7008,6 +7005,7 @@ const VoidVoyager = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
