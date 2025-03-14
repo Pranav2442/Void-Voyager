@@ -261,7 +261,11 @@ const VoidVoyager = () => {
       alpha: true,
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(
+      isMobile
+        ? Math.min(window.devicePixelRatio, 1.5)
+        : Math.min(window.devicePixelRatio, 2)
+    );
     renderer.setClearColor(0x000000);
 
     renderer.outputEncoding = THREE.sRGBEncoding;
@@ -768,14 +772,14 @@ const VoidVoyager = () => {
         startPosition: new THREE.Vector3(-15, 0, 10),
         orbitType: "elliptical",
         orbitParams: {
-          semiMajor: 18, 
-          semiMinor: 12, 
-          center: new THREE.Vector3(3, 0, 0), 
+          semiMajor: 18,
+          semiMinor: 12,
+          center: new THREE.Vector3(3, 0, 0),
           incline: 0.1,
           period: 5000,
         },
         scale: 1.0,
-        speed: 0.015, 
+        speed: 0.015,
         angle: 0,
         description:
           "Studying the Sun's corona, the closest any spacecraft has been to the Sun.",
@@ -2867,7 +2871,7 @@ const VoidVoyager = () => {
             const dish = new THREE.Mesh(dishGeometry, dishMaterial);
             dish.rotation.x = Math.PI / 2;
             dish.position.z = 0.7;
-            dish.scale.set(1.2, 1.2, 0.3); 
+            dish.scale.set(1.2, 1.2, 0.3);
             group.add(dish);
 
             const dishInterior = new THREE.Mesh(
@@ -2891,7 +2895,7 @@ const VoidVoyager = () => {
             );
             dishInterior.position.z = 0.65;
             dishInterior.rotation.x = Math.PI / 2;
-            dishInterior.scale.set(1, 1, 0.25); 
+            dishInterior.scale.set(1, 1, 0.25);
             group.add(dishInterior);
 
             for (let i = 0; i < 4; i++) {
@@ -4145,9 +4149,9 @@ const VoidVoyager = () => {
               group.add(light);
             };
 
-            createPulsingLight(-1.7, 0, 0xff0000); 
-            createPulsingLight(1.7, 0, 0x00ff00); 
-            createPulsingLight(0, 0.2, 0xffffff); 
+            createPulsingLight(-1.7, 0, 0xff0000);
+            createPulsingLight(1.7, 0, 0x00ff00);
+            createPulsingLight(0, 0.2, 0xffffff);
 
             const roverArm = new THREE.Group();
             roverArm.position.set(0.4, 0.1, 0.3);
@@ -4739,11 +4743,11 @@ const VoidVoyager = () => {
 
       spacecraftData.forEach((spacecraft) => {
         if (isMobile) {
-          spacecraft.scale *= 0.8; 
+          spacecraft.scale *= 0.8;
         }
         const model = createSimpleModel(spacecraft.modelType, 0xdddddd);
         if (isMobile) {
-          spacecraft.scale *= 0.8; 
+          spacecraft.scale *= 0.8;
         }
         model.scale.set(spacecraft.scale, spacecraft.scale, spacecraft.scale);
 
@@ -6167,20 +6171,18 @@ const VoidVoyager = () => {
               );
             }
           } else if (spacecraft.data.orbitType === "l2") {
-            if (
-              spacecraft.data.startPlanet &&
-              planets[spacecraft.data.startPlanet]
-            ) {
-              const planetPos =
-                planets[spacecraft.data.startPlanet].container.position.clone();
-              const sunDir = planetPos.clone().normalize();
-
-              const l2Pos = planetPos
-                .clone()
-                .add(sunDir.multiplyScalar(spacecraft.data.distance || 10));
-
+            if (spacecraft.data.startPlanet && planets[spacecraft.data.startPlanet]) {
+              const planetPos = planets[spacecraft.data.startPlanet].container.position.clone();
+              
+              const sunToPlanetDir = planetPos.clone().normalize();
+              
+              const l2Pos = planetPos.clone().add(
+                sunToPlanetDir.multiplyScalar(spacecraft.data.distance || 10)
+              );
+              
               spacecraft.container.position.copy(l2Pos);
-              spacecraft.mesh.lookAt(planetPos);
+              
+              spacecraft.mesh.lookAt(l2Pos.clone().add(sunToPlanetDir));
             }
           }
 
@@ -6346,8 +6348,7 @@ const VoidVoyager = () => {
       };
 
       animate();
-    }
-    else {
+    } else {
       const planet = objectName ? planetsRef.current[objectName] : null;
 
       const targetPos = new THREE.Vector3();
@@ -6439,9 +6440,9 @@ const VoidVoyager = () => {
         animationIdRef.current = requestAnimationFrame(animate);
       }
     };
-  
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
