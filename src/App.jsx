@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { Github, Globe, Orbit, Moon, } from "lucide-react";
+import { Github, Globe, Orbit, Moon, Rocket, CircleDashed } from "lucide-react";
 
 const GoogleAnalytics = () => {
   useEffect(() => {
@@ -38,6 +38,8 @@ const VoidVoyager = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [speedMultiplier, setSpeedMultiplier] = useState(1);
   const [controlsOpen, setControlsOpen] = useState(true);
+  const [showSpacecraft, setShowSpacecraft] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const hoveredPlanetRef = useRef(null);
   const mousePositionRef = useRef({ x: 0, y: 0 });
@@ -55,6 +57,8 @@ const VoidVoyager = () => {
   const pointerMoveTimeoutRef = useRef(null);
   const asteroidsRef = useRef([]);
   const asteroidBeltRef = useRef(null);
+  const spacecraftRef = useRef({});
+  const highlightAnimationRef = useRef(null);
 
   const visibilityRef = useRef({
     showPlanets: true,
@@ -67,8 +71,9 @@ const VoidVoyager = () => {
       showPlanets,
       showOrbits,
       showMoons,
+      showSpacecraft,
     };
-  }, [showPlanets, showOrbits, showMoons]);
+  }, [showPlanets, showOrbits, showMoons, showSpacecraft]);
 
   useEffect(() => {
     animationSpeedRef.current = speedMultiplier;
@@ -81,12 +86,63 @@ const VoidVoyager = () => {
       if (planet.label) planet.label.visible = false;
     });
 
+    if (spacecraftRef.current) {
+      Object.values(spacecraftRef.current).forEach((spacecraft) => {
+        if (spacecraft.label) spacecraft.label.visible = false;
+        if (spacecraft.highlightSphere)
+          spacecraft.highlightSphere.visible = false;
+      });
+    }
+
     if (
       selectedPlanet &&
       planetsRef.current[selectedPlanet] &&
       planetsRef.current[selectedPlanet].label
     ) {
       planetsRef.current[selectedPlanet].label.visible = true;
+    }
+
+    if (
+      selectedPlanet &&
+      spacecraftRef.current &&
+      spacecraftRef.current[selectedPlanet]
+    ) {
+      if (spacecraftRef.current[selectedPlanet].label) {
+        spacecraftRef.current[selectedPlanet].label.visible = true;
+      }
+
+      if (spacecraftRef.current[selectedPlanet].highlightSphere) {
+        spacecraftRef.current[selectedPlanet].highlightSphere.visible = true;
+
+        const animateHighlight = () => {
+          const time = performance.now() * 0.001;
+          const scale = 1.0 + Math.sin(time * 2.0) * 0.2;
+
+          if (
+            spacecraftRef.current &&
+            spacecraftRef.current[selectedPlanet] &&
+            spacecraftRef.current[selectedPlanet].highlightSphere
+          ) {
+            spacecraftRef.current[selectedPlanet].highlightSphere.scale.set(
+              scale,
+              scale,
+              scale
+            );
+          }
+
+          highlightAnimationRef.current =
+            requestAnimationFrame(animateHighlight);
+        };
+
+        if (highlightAnimationRef.current) {
+          cancelAnimationFrame(highlightAnimationRef.current);
+        }
+
+        highlightAnimationRef.current = requestAnimationFrame(animateHighlight);
+      }
+    } else if (highlightAnimationRef.current) {
+      cancelAnimationFrame(highlightAnimationRef.current);
+      highlightAnimationRef.current = null;
     }
   }, [selectedPlanet]);
 
@@ -186,8 +242,8 @@ const VoidVoyager = () => {
     sceneRef.current = scene;
 
     const isLowPerformance = false;
-    const planetSegments = isLowPerformance ? 32 : 64;
-    const starCount = isMobile ? 1500 : 8000;
+    const planetSegments = isMobile ? 24 : 64;
+    // const starCount = isMobile ? 1500 : 8000;
 
     const fov = isMobile ? 85 : 75;
     const camera = new THREE.PerspectiveCamera(
@@ -205,7 +261,7 @@ const VoidVoyager = () => {
       alpha: true,
     });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000);
 
     renderer.outputEncoding = THREE.sRGBEncoding;
@@ -660,6 +716,116 @@ const VoidVoyager = () => {
                 speed: 0.012,
               },
             ],
+      },
+    ];
+
+    const spacecraftData = [
+      {
+        name: "Voyager 1",
+        modelType: "voyager",
+        startPlanet: null,
+        startPosition: new THREE.Vector3(180, 40, 180),
+        orbitType: "escape",
+        escapeVector: new THREE.Vector3(0.5, 0.2, 0.5).normalize(),
+        scale: 1.5,
+        speed: 0.015,
+        distance: 230,
+        angle: Math.PI * 0.7,
+        description:
+          "Launched in 1977, now in interstellar space, the furthest human-made object from Earth.",
+      },
+      {
+        name: "Voyager 2",
+        modelType: "voyager",
+        startPlanet: null,
+        startPosition: new THREE.Vector3(-160, -20, 200),
+        orbitType: "escape",
+        escapeVector: new THREE.Vector3(-0.6, -0.1, 0.7).normalize(),
+        scale: 1.5,
+        speed: 0.014,
+        distance: 210,
+        angle: Math.PI * 1.3,
+        description:
+          "Launched in 1977, the only spacecraft to have visited Uranus and Neptune.",
+      },
+      {
+        name: "New Horizons",
+        modelType: "newHorizons",
+        startPlanet: null,
+        startPosition: new THREE.Vector3(120, 15, -180),
+        orbitType: "escape",
+        escapeVector: new THREE.Vector3(0.3, 0.1, -0.9).normalize(),
+        scale: 1.2,
+        speed: 0.016,
+        distance: 190,
+        angle: Math.PI * 1.8,
+        description: "Flew by Pluto in 2015, now exploring the Kuiper Belt.",
+      },
+      {
+        name: "Parker Solar Probe",
+        modelType: "parker",
+        startPlanet: null,
+        startPosition: new THREE.Vector3(-15, 0, 10),
+        orbitType: "elliptical",
+        orbitParams: {
+          semiMajor: 18, 
+          semiMinor: 12, 
+          center: new THREE.Vector3(3, 0, 0), 
+          incline: 0.1,
+          period: 5000,
+        },
+        scale: 1.0,
+        speed: 0.015, 
+        angle: 0,
+        description:
+          "Studying the Sun's corona, the closest any spacecraft has been to the Sun.",
+      },
+      {
+        name: "James Webb",
+        modelType: "jwst",
+        startPlanet: "Earth",
+        orbitType: "l2",
+        distance: 10,
+        angle: Math.PI * 0.5,
+        scale: 1.8,
+        speed: 0.004,
+        description:
+          "Space telescope operating at L2, 1.5 million km from Earth.",
+      },
+      {
+        name: "ISS",
+        modelType: "iss",
+        startPlanet: "Earth",
+        orbitType: "planetary",
+        distance: 3,
+        scale: 0.3,
+        speed: 0.05,
+        angle: 0,
+        height: 0.1,
+        description:
+          "International Space Station, continuously inhabited since 2000.",
+      },
+      {
+        name: "Perseverance",
+        modelType: "rover",
+        startPlanet: "Mars",
+        orbitType: "landed",
+        landLocation: new THREE.Vector3(0.8, 0, 0.5).normalize(),
+        scale: 0.4,
+        description:
+          "NASA rover that landed on Mars in 2021, searching for signs of ancient life.",
+      },
+      {
+        name: "Cassini",
+        modelType: "cassini",
+        startPlanet: "Saturn",
+        orbitType: "planetary",
+        distance: 12,
+        scale: 1.5,
+        speed: 0.01,
+        angle: Math.PI * 0.3,
+        description:
+          "Studied Saturn and its moons from 2004 to 2017 before its Grand Finale descent.",
       },
     ];
 
@@ -2247,7 +2413,7 @@ const VoidVoyager = () => {
 
     const createAsteroidBelt = () => {
       const asteroids = [];
-      const numberOfAsteroids = isMobile ? 1000 : 3500;
+      const numberOfAsteroids = isMobile ? 800 : 3500;
 
       const asteroidBelt = new THREE.Object3D();
       scene.add(asteroidBelt);
@@ -2420,7 +2586,7 @@ const VoidVoyager = () => {
 
       const geometryPool = [];
 
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 4; i++) {
         const baseSize = Math.random() * 0.3 + 0.2;
         let asteroidGeometry;
 
@@ -2648,6 +2814,2091 @@ const VoidVoyager = () => {
     };
 
     createAsteroidBelt();
+
+    const createSpacecrafts = () => {
+      const spacecrafts = {};
+
+      const createSimpleModel = (type, color) => {
+        const group = new THREE.Group();
+
+        switch (type) {
+          case "voyager":
+            const mainBus = new THREE.Mesh(
+              new THREE.BoxGeometry(0.7, 0.3, 1.2),
+              new THREE.MeshStandardMaterial({
+                color: 0xf0f0f0,
+                metalness: 0.9,
+                roughness: 0.2,
+                envMapIntensity: 2.0,
+              })
+            );
+            group.add(mainBus);
+
+            const busDetail = new THREE.Mesh(
+              new THREE.BoxGeometry(0.65, 0.25, 1.1),
+              new THREE.MeshStandardMaterial({
+                color: 0xe8d170,
+                metalness: 1.0,
+                roughness: 0.3,
+                emissive: 0x332200,
+                emissiveIntensity: 0.1,
+              })
+            );
+            busDetail.position.y = 0.01;
+            group.add(busDetail);
+
+            const dishGeometry = new THREE.SphereGeometry(
+              1.0,
+              32,
+              32,
+              0,
+              Math.PI * 2,
+              0,
+              Math.PI / 2
+            );
+            const dishMaterial = new THREE.MeshStandardMaterial({
+              color: 0xffffff,
+              metalness: 0.9,
+              roughness: 0.1,
+              side: THREE.DoubleSide,
+              emissive: 0xaaaaaa,
+              emissiveIntensity: 0.1,
+            });
+            const dish = new THREE.Mesh(dishGeometry, dishMaterial);
+            dish.rotation.x = Math.PI / 2;
+            dish.position.z = 0.7;
+            dish.scale.set(1.2, 1.2, 0.3); 
+            group.add(dish);
+
+            const dishInterior = new THREE.Mesh(
+              new THREE.SphereGeometry(
+                0.95,
+                32,
+                32,
+                0,
+                Math.PI * 2,
+                0,
+                Math.PI / 2
+              ),
+              new THREE.MeshStandardMaterial({
+                color: 0xf8f8f8,
+                metalness: 0.8,
+                roughness: 0.2,
+                side: THREE.DoubleSide,
+                emissive: 0x555555,
+                emissiveIntensity: 0.1,
+              })
+            );
+            dishInterior.position.z = 0.65;
+            dishInterior.rotation.x = Math.PI / 2;
+            dishInterior.scale.set(1, 1, 0.25); 
+            group.add(dishInterior);
+
+            for (let i = 0; i < 4; i++) {
+              const angle = (i / 4) * Math.PI * 2;
+              const strut = new THREE.Mesh(
+                new THREE.BoxGeometry(0.05, 0.05, 0.3),
+                new THREE.MeshStandardMaterial({
+                  color: 0xcccccc,
+                  metalness: 0.8,
+                  roughness: 0.2,
+                })
+              );
+              strut.position.set(
+                Math.cos(angle) * 0.4,
+                Math.sin(angle) * 0.4,
+                0.45
+              );
+              group.add(strut);
+            }
+
+            const rtgBoom = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.04, 0.04, 2.0, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0xaaaaaa,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x222222,
+                emissiveIntensity: 0.1,
+              })
+            );
+            rtgBoom.rotation.z = Math.PI / 2;
+            rtgBoom.position.x = -1.1;
+            group.add(rtgBoom);
+
+            const rtgCylinder = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.12, 0.12, 0.5, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                metalness: 0.9,
+                roughness: 0.2,
+                emissive: 0x330000,
+                emissiveIntensity: 0.2,
+              })
+            );
+            rtgCylinder.position.set(-1.8, 0, 0);
+            rtgCylinder.rotation.z = Math.PI / 2;
+            group.add(rtgCylinder);
+
+            for (let i = 0; i < 12; i++) {
+              const fin = new THREE.Mesh(
+                new THREE.BoxGeometry(0.08, 0.4, 0.01),
+                new THREE.MeshStandardMaterial({
+                  color: 0x555555,
+                  metalness: 0.9,
+                  roughness: 0.2,
+                  emissive: 0x220000,
+                  emissiveIntensity: 0.2,
+                })
+              );
+              fin.position.set(-1.8, 0, 0);
+              fin.rotation.z = Math.PI / 2;
+              fin.rotation.y = (i / 12) * Math.PI * 2;
+              rtgCylinder.add(fin);
+            }
+
+            const rtgHot = new THREE.Mesh(
+              new THREE.SphereGeometry(0.06, 16, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xff3300,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.8,
+              })
+            );
+            rtgHot.position.set(-2.05, 0, 0);
+            group.add(rtgHot);
+
+            const scienceBoom = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.03, 0.03, 1.8, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0xaaaaaa,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            scienceBoom.position.set(1.0, 0, 0);
+            scienceBoom.rotation.z = Math.PI / 2;
+            group.add(scienceBoom);
+
+            const instruments = new THREE.Group();
+            instruments.position.set(1.8, 0, 0);
+
+            const mainInstrument = new THREE.Mesh(
+              new THREE.BoxGeometry(0.3, 0.2, 0.3),
+              new THREE.MeshStandardMaterial({
+                color: 0x222222,
+                metalness: 0.7,
+                roughness: 0.2,
+                emissive: 0x111111,
+                emissiveIntensity: 0.1,
+              })
+            );
+            instruments.add(mainInstrument);
+
+            const camera1 = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.06, 0.08, 0.12, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0x111111,
+                metalness: 0.6,
+                roughness: 0.3,
+              })
+            );
+            camera1.rotation.x = Math.PI / 2;
+            camera1.position.set(0, 0, 0.2);
+            instruments.add(camera1);
+
+            const camera2 = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.05, 0.07, 0.1, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0x111111,
+                metalness: 0.6,
+                roughness: 0.3,
+              })
+            );
+            camera2.rotation.x = Math.PI / 2;
+            camera2.rotation.z = Math.PI / 6;
+            camera2.position.set(0.12, 0.05, 0.18);
+            instruments.add(camera2);
+
+            const lens1 = new THREE.Mesh(
+              new THREE.CircleGeometry(0.05, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0x222266,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: 0x0000ff,
+                emissiveIntensity: 0.2,
+              })
+            );
+            lens1.position.set(0, 0, 0.26);
+            lens1.rotation.x = Math.PI / 2;
+            instruments.add(lens1);
+
+            group.add(instruments);
+
+            const antenna1 = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.01, 0.01, 0.8, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                metalness: 0.8,
+                roughness: 0.3,
+              })
+            );
+            antenna1.position.set(0, 0.25, -0.3);
+            antenna1.rotation.x = Math.PI / 4;
+            group.add(antenna1);
+
+            const antenna2 = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.01, 0.01, 0.8, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                metalness: 0.8,
+                roughness: 0.3,
+              })
+            );
+            antenna2.position.set(0, -0.25, -0.3);
+            antenna2.rotation.x = -Math.PI / 4;
+            group.add(antenna2);
+
+            const rtgGlow = new THREE.PointLight(0xff6a00, 1.0, 2.0);
+            rtgGlow.position.set(-1.8, 0, 0);
+            group.add(rtgGlow);
+
+            break;
+
+          case "newHorizons":
+            const body = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.5, 0.5, 0.7, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xf5f5f5,
+                metalness: 0.7,
+                roughness: 0.3,
+                envMapIntensity: 1.5,
+              })
+            );
+            group.add(body);
+
+            const nhBodyDetail = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.51, 0.51, 0.3, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0x3366cc,
+                metalness: 0.5,
+                roughness: 0.5,
+                emissive: 0x001133,
+                emissiveIntensity: 0.1,
+              })
+            );
+            nhBodyDetail.position.y = 0.15;
+            group.add(nhBodyDetail);
+
+            const blanket = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.49, 0.49, 0.68, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xffd700,
+                metalness: 0.9,
+                roughness: 0.3,
+                emissive: 0x553300,
+                emissiveIntensity: 0.1,
+              })
+            );
+            blanket.position.y = 0.01;
+            group.add(blanket);
+
+            const nhDishGeom = new THREE.SphereGeometry(
+              0.7,
+              32,
+              16,
+              0,
+              Math.PI * 2,
+              0,
+              Math.PI / 2
+            );
+            const nhDishMat = new THREE.MeshStandardMaterial({
+              color: 0xffd700,
+              metalness: 1.0,
+              roughness: 0.1,
+              side: THREE.DoubleSide,
+              emissive: 0xaa7700,
+              emissiveIntensity: 0.2,
+            });
+            const nhDish = new THREE.Mesh(nhDishGeom, nhDishMat);
+            nhDish.scale.set(1.2, 1.2, 0.15);
+            nhDish.position.y = 0.5;
+            nhDish.rotation.x = -Math.PI / 2;
+            group.add(nhDish);
+
+            const nhDishInterior = new THREE.Mesh(
+              new THREE.CircleGeometry(0.65, 32),
+              new THREE.MeshStandardMaterial({
+                color: 0xddaa00,
+                metalness: 0.9,
+                roughness: 0.2,
+                side: THREE.DoubleSide,
+                emissive: 0x665500,
+                emissiveIntensity: 0.1,
+              })
+            );
+            nhDishInterior.position.y = 0.48;
+            nhDishInterior.rotation.x = -Math.PI / 2;
+            group.add(nhDishInterior);
+
+            const feedHorn = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.05, 0.1, 0.15, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xdddddd,
+                metalness: 0.9,
+                roughness: 0.2,
+              })
+            );
+            feedHorn.position.y = 0.35;
+            group.add(feedHorn);
+
+            const nhRtg = new THREE.Mesh(
+              new THREE.BoxGeometry(0.3, 0.4, 0.3),
+              new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: 0x330000,
+                emissiveIntensity: 0.1,
+              })
+            );
+            nhRtg.position.set(-0.6, -0.2, 0);
+            group.add(nhRtg);
+
+            for (let i = 0; i < 6; i++) {
+              const rtgFin = new THREE.Mesh(
+                new THREE.BoxGeometry(0.3, 0.4, 0.02),
+                new THREE.MeshStandardMaterial({
+                  color: 0x555555,
+                  metalness: 0.9,
+                  roughness: 0.2,
+                  emissive: 0x220000,
+                  emissiveIntensity: 0.1,
+                })
+              );
+              rtgFin.position.set(-0.6, -0.2, 0);
+              rtgFin.rotation.y = (i / 6) * Math.PI;
+              group.add(rtgFin);
+            }
+
+            const nhInstruments = new THREE.Group();
+            nhInstruments.position.set(0, 0.2, 0.3);
+
+            const instrumentPositions = [
+              { x: 0, y: 0, z: 0 },
+              { x: 0.15, y: 0.1, z: 0.05 },
+              { x: -0.15, y: 0.05, z: 0.1 },
+              { x: 0, y: -0.15, z: -0.05 },
+            ];
+
+            instrumentPositions.forEach((pos, idx) => {
+              const color = idx === 0 ? 0x111111 : 0x222222;
+              const size = idx === 0 ? 0.15 : 0.12;
+
+              const instrument = new THREE.Mesh(
+                new THREE.BoxGeometry(size, size, size),
+                new THREE.MeshStandardMaterial({
+                  color: color,
+                  metalness: 0.7,
+                  roughness: 0.3,
+                  emissive: 0x111111,
+                  emissiveIntensity: 0.1,
+                })
+              );
+              instrument.position.set(pos.x, pos.y, pos.z);
+              nhInstruments.add(instrument);
+
+              if (idx < 2) {
+                const lens = new THREE.Mesh(
+                  new THREE.CircleGeometry(size * 0.3, 16),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x3366cc,
+                    metalness: 0.9,
+                    roughness: 0.1,
+                    emissive: 0x0000cc,
+                    emissiveIntensity: 0.2,
+                    side: THREE.DoubleSide,
+                  })
+                );
+                lens.position.z = size / 2 + 0.01;
+                lens.rotation.y = Math.PI / 2;
+                instrument.add(lens);
+              }
+            });
+
+            group.add(nhInstruments);
+
+            const thrusterPositions = [
+              { x: 0, y: -0.4, z: 0.3 },
+              { x: 0, y: -0.4, z: -0.3 },
+              { x: 0.3, y: -0.4, z: 0 },
+              { x: -0.3, y: -0.4, z: 0 },
+            ];
+
+            thrusterPositions.forEach((pos) => {
+              const thruster = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.05, 0.07, 0.1, 8),
+                new THREE.MeshStandardMaterial({
+                  color: 0x666666,
+                  metalness: 0.9,
+                  roughness: 0.2,
+                })
+              );
+              thruster.position.set(pos.x, pos.y, pos.z);
+              thruster.rotation.x = Math.PI / 2;
+              group.add(thruster);
+            });
+
+            const starTracker = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.03, 0.04, 0.1, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                metalness: 0.6,
+                roughness: 0.3,
+              })
+            );
+            starTracker.position.set(0.4, 0.2, 0);
+            starTracker.rotation.z = Math.PI / 2;
+            group.add(starTracker);
+
+            const nhRtgGlow = new THREE.PointLight(0xff6a00, 1.0, 2.0);
+            nhRtgGlow.position.set(-0.6, -0.2, 0);
+            group.add(nhRtgGlow);
+
+            break;
+
+          case "parker":
+            const parkerBody = new THREE.Mesh(
+              new THREE.BoxGeometry(0.4, 0.4, 0.5),
+              new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.7,
+                roughness: 0.3,
+                envMapIntensity: 1.5,
+              })
+            );
+            group.add(parkerBody);
+
+            const parkerHeatShieldGeom = new THREE.CylinderGeometry(
+              1.0,
+              1.0,
+              0.1,
+              32
+            );
+            const parkerHeatShieldMat = new THREE.MeshStandardMaterial({
+              color: 0x222222,
+              metalness: 0.2,
+              roughness: 0.9,
+              emissive: 0x330000,
+              emissiveIntensity: 0.3,
+            });
+            const parkerHeatShield = new THREE.Mesh(
+              parkerHeatShieldGeom,
+              parkerHeatShieldMat
+            );
+            parkerHeatShield.rotation.x = Math.PI / 2;
+            parkerHeatShield.position.z = -0.4;
+            group.add(parkerHeatShield);
+
+            const heatShieldDetail = new THREE.Mesh(
+              new THREE.RingGeometry(0.4, 0.95, 32),
+              new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                metalness: 0.3,
+                roughness: 0.8,
+                side: THREE.DoubleSide,
+                emissive: 0x220000,
+                emissiveIntensity: 0.2,
+              })
+            );
+            heatShieldDetail.position.z = -0.39;
+            heatShieldDetail.rotation.x = Math.PI / 2;
+            group.add(heatShieldDetail);
+
+            for (let i = 0; i < 8; i++) {
+              const angle = (i / 8) * Math.PI * 2;
+              const radius = 0.7;
+
+              const pipe = new THREE.Mesh(
+                new THREE.TorusGeometry(radius, 0.02, 8, 12, Math.PI / 4),
+                new THREE.MeshStandardMaterial({
+                  color: 0x555555,
+                  metalness: 0.7,
+                  roughness: 0.3,
+                })
+              );
+
+              pipe.position.z = -0.35;
+              pipe.rotation.x = Math.PI / 2;
+              pipe.rotation.z = angle;
+              group.add(pipe);
+            }
+
+            const panelFrame1 = new THREE.Mesh(
+              new THREE.BoxGeometry(2.0, 0.05, 0.6),
+              new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                metalness: 0.9,
+                roughness: 0.3,
+              })
+            );
+            panelFrame1.position.x = 1.1;
+            group.add(panelFrame1);
+
+            const panel1 = new THREE.Mesh(
+              new THREE.BoxGeometry(1.9, 0.02, 0.5),
+              new THREE.MeshStandardMaterial({
+                color: 0x2244aa,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x001133,
+                emissiveIntensity: 0.3,
+              })
+            );
+            panel1.position.x = 1.1;
+            panel1.position.y = 0.02;
+            group.add(panel1);
+
+            const panelGrid1 = new THREE.Group();
+            for (let x = 0; x < 10; x++) {
+              for (let y = 0; y < 5; y++) {
+                const cell = new THREE.Mesh(
+                  new THREE.PlaneGeometry(0.17, 0.09),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x1133aa,
+                    metalness: 0.8,
+                    roughness: 0.2,
+                    emissive: 0x001133,
+                    emissiveIntensity: 0.2,
+                    side: THREE.DoubleSide,
+                  })
+                );
+                cell.position.set(-0.85 + x * 0.19, 0, -0.2 + y * 0.1);
+                cell.rotation.x = Math.PI / 2;
+                panelGrid1.add(cell);
+              }
+            }
+            panel1.add(panelGrid1);
+
+            const panelFrame2 = new THREE.Mesh(
+              new THREE.BoxGeometry(2.0, 0.05, 0.6),
+              new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                metalness: 0.9,
+                roughness: 0.3,
+              })
+            );
+            panelFrame2.position.x = -1.1;
+            group.add(panelFrame2);
+
+            const panel2 = new THREE.Mesh(
+              new THREE.BoxGeometry(1.9, 0.02, 0.5),
+              new THREE.MeshStandardMaterial({
+                color: 0x2244aa,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x001133,
+                emissiveIntensity: 0.3,
+              })
+            );
+            panel2.position.x = -1.1;
+            panel2.position.y = 0.02;
+            group.add(panel2);
+
+            const panelGrid2 = new THREE.Group();
+            for (let x = 0; x < 10; x++) {
+              for (let y = 0; y < 5; y++) {
+                const cell = new THREE.Mesh(
+                  new THREE.PlaneGeometry(0.17, 0.09),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x1133aa,
+                    metalness: 0.8,
+                    roughness: 0.2,
+                    emissive: 0x001133,
+                    emissiveIntensity: 0.2,
+                    side: THREE.DoubleSide,
+                  })
+                );
+                cell.position.set(-0.85 + x * 0.19, 0, -0.2 + y * 0.1);
+                cell.rotation.x = Math.PI / 2;
+                panelGrid2.add(cell);
+              }
+            }
+            panel2.add(panelGrid2);
+
+            const parkerInstruments = new THREE.Group();
+            parkerInstruments.position.set(0, 0.3, 0);
+
+            const comm = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.08, 0.08, 0.15, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                metalness: 0.8,
+                roughness: 0.2,
+              })
+            );
+            parkerInstruments.add(comm);
+
+            const commDish = new THREE.Mesh(
+              new THREE.SphereGeometry(
+                0.15,
+                16,
+                8,
+                0,
+                Math.PI * 2,
+                0,
+                Math.PI / 2
+              ),
+              new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.7,
+                roughness: 0.3,
+                side: THREE.DoubleSide,
+              })
+            );
+            commDish.scale.set(1, 1, 0.2);
+            commDish.position.y = 0.15;
+            commDish.rotation.x = -Math.PI / 2;
+            parkerInstruments.add(commDish);
+
+            const solarSensor = new THREE.Mesh(
+              new THREE.BoxGeometry(0.1, 0.1, 0.15),
+              new THREE.MeshStandardMaterial({
+                color: 0x222222,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            solarSensor.position.set(0.2, 0, 0.2);
+            parkerInstruments.add(solarSensor);
+
+            const coolingRadiator = new THREE.Mesh(
+              new THREE.BoxGeometry(0.3, 0.05, 0.2),
+              new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: 0x333333,
+                emissiveIntensity: 0.1,
+              })
+            );
+            coolingRadiator.position.set(-0.2, -0.05, 0.15);
+            parkerInstruments.add(coolingRadiator);
+
+            for (let i = 0; i < 5; i++) {
+              const radiatorFin = new THREE.Mesh(
+                new THREE.BoxGeometry(0.28, 0.01, 0.02),
+                new THREE.MeshStandardMaterial({
+                  color: 0xdddddd,
+                  metalness: 0.9,
+                  roughness: 0.1,
+                })
+              );
+              radiatorFin.position.set(-0.2, -0.05, 0.15 - 0.04 * i);
+              parkerInstruments.add(radiatorFin);
+            }
+
+            group.add(parkerInstruments);
+
+            for (let i = 0; i < 4; i++) {
+              const angle = (i / 4) * Math.PI * 2;
+              const x = Math.cos(angle) * 0.5;
+              const y = Math.sin(angle) * 0.5;
+
+              const strut = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8),
+                new THREE.MeshStandardMaterial({
+                  color: 0x888888,
+                  metalness: 0.7,
+                  roughness: 0.3,
+                })
+              );
+
+              strut.position.set(x, y, -0.15);
+              strut.rotation.x = Math.PI / 6;
+              group.add(strut);
+            }
+
+            const heatShieldGlow = new THREE.PointLight(0xff4400, 0.8, 1.5);
+            heatShieldGlow.position.set(0, 0, -0.5);
+            group.add(heatShieldGlow);
+
+            break;
+
+          case "jwst":
+            const jwstBody = new THREE.Mesh(
+              new THREE.BoxGeometry(0.5, 0.5, 0.9),
+              new THREE.MeshStandardMaterial({
+                color: 0xdddddd,
+                metalness: 0.8,
+                roughness: 0.2,
+                envMapIntensity: 1.5,
+              })
+            );
+            group.add(jwstBody);
+
+            const jwstBodyDetail = new THREE.Mesh(
+              new THREE.BoxGeometry(0.45, 0.45, 0.85),
+              new THREE.MeshStandardMaterial({
+                color: 0xe8d170,
+                metalness: 1.0,
+                roughness: 0.2,
+                emissive: 0x554400,
+                emissiveIntensity: 0.1,
+              })
+            );
+            jwstBodyDetail.position.y = 0.01;
+            group.add(jwstBodyDetail);
+
+            const mirrorGroup = new THREE.Group();
+            mirrorGroup.position.set(0, 0, 0.65);
+
+            const hexGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.05, 6);
+            const mirrorMat = new THREE.MeshStandardMaterial({
+              color: 0xffd700,
+              metalness: 1.0,
+              roughness: 0.05,
+              emissive: 0x665500,
+              emissiveIntensity: 0.2,
+              envMapIntensity: 2.5,
+            });
+
+            const positions = [
+              [0, 0],
+              [0.17, 0],
+              [0.085, 0.147],
+              [-0.085, 0.147],
+              [-0.17, 0],
+              [-0.085, -0.147],
+              [0.085, -0.147],
+              [0.34, 0],
+              [0.255, 0.147],
+              [0.17, 0.294],
+              [0.085, 0.441],
+              [0, 0.294],
+              [-0.085, 0.441],
+              [-0.17, 0.294],
+              [-0.255, 0.147],
+              [-0.34, 0],
+              [-0.255, -0.147],
+              [-0.17, -0.294],
+              [-0.085, -0.441],
+              [0, -0.294],
+              [0.085, -0.441],
+              [0.17, -0.294],
+              [0.255, -0.147],
+            ];
+
+            for (let i = 0; i < positions.length; i++) {
+              const segment = new THREE.Mesh(hexGeom, mirrorMat);
+              segment.position.set(positions[i][0], positions[i][1], 0);
+              segment.rotation.x = -Math.PI / 2;
+
+              const reflection = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.075, 0.075, 0.01, 6),
+                new THREE.MeshBasicMaterial({
+                  color: 0xffffff,
+                  transparent: true,
+                  opacity: 0.3,
+                })
+              );
+              reflection.position.z = 0.026;
+              segment.add(reflection);
+
+              mirrorGroup.add(segment);
+            }
+
+            group.add(mirrorGroup);
+
+            const supportBeam = new THREE.Mesh(
+              new THREE.BoxGeometry(0.03, 0.03, 1.2),
+              new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                metalness: 0.8,
+                roughness: 0.2,
+              })
+            );
+            supportBeam.position.z = 1.2;
+            group.add(supportBeam);
+
+            const secMirrorStrut1 = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.015, 0.015, 0.8, 6),
+              new THREE.MeshStandardMaterial({
+                color: 0x999999,
+                metalness: 0.8,
+                roughness: 0.2,
+              })
+            );
+            secMirrorStrut1.position.set(0.2, 0.2, 1.0);
+            secMirrorStrut1.rotation.x = Math.PI / 6;
+            secMirrorStrut1.rotation.z = -Math.PI / 8;
+            group.add(secMirrorStrut1);
+
+            const secMirrorStrut2 = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.015, 0.015, 0.8, 6),
+              new THREE.MeshStandardMaterial({
+                color: 0x999999,
+                metalness: 0.8,
+                roughness: 0.2,
+              })
+            );
+            secMirrorStrut2.position.set(-0.2, 0.2, 1.0);
+            secMirrorStrut2.rotation.x = Math.PI / 6;
+            secMirrorStrut2.rotation.z = Math.PI / 8;
+            group.add(secMirrorStrut2);
+
+            const secMirrorStrut3 = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.015, 0.015, 0.8, 6),
+              new THREE.MeshStandardMaterial({
+                color: 0x999999,
+                metalness: 0.8,
+                roughness: 0.2,
+              })
+            );
+            secMirrorStrut3.position.set(0, -0.2, 1.0);
+            secMirrorStrut3.rotation.x = -Math.PI / 6;
+            group.add(secMirrorStrut3);
+
+            const secondaryMirror = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.12, 0.12, 0.03, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xffd700,
+                metalness: 1.0,
+                roughness: 0.05,
+                emissive: 0x665500,
+                emissiveIntensity: 0.2,
+                side: THREE.DoubleSide,
+              })
+            );
+            secondaryMirror.position.set(0, 0, 1.8);
+            secondaryMirror.rotation.x = -Math.PI / 2;
+            group.add(secondaryMirror);
+
+            const shieldGroup = new THREE.Group();
+            shieldGroup.position.set(0, -1.0, 0);
+            shieldGroup.rotation.x = Math.PI / 2;
+
+            const shieldColors = [
+              0xddccaa, 0xeeddaa, 0xffeebb, 0xffffcc, 0xffffee,
+            ];
+
+            const shieldShape = new THREE.Shape();
+            shieldShape.moveTo(-1.0, -1.0);
+            shieldShape.lineTo(1.0, -1.0);
+            shieldShape.lineTo(1.2, 0);
+            shieldShape.lineTo(1.0, 1.0);
+            shieldShape.lineTo(-1.0, 1.0);
+            shieldShape.lineTo(-1.2, 0);
+            shieldShape.lineTo(-1.0, -1.0);
+
+            for (let i = 0; i < 5; i++) {
+              const shield = new THREE.Mesh(
+                new THREE.ShapeGeometry(shieldShape),
+                new THREE.MeshStandardMaterial({
+                  color: shieldColors[i],
+                  metalness: 0.4,
+                  roughness: 0.6,
+                  side: THREE.DoubleSide,
+                  transparent: true,
+                  opacity: 0.95,
+                  emissive: shieldColors[i],
+                  emissiveIntensity: 0.05,
+                })
+              );
+              shield.position.z = i * 0.025;
+
+              shield.rotation.z = (Math.random() - 0.5) * 0.05;
+              shield.position.x = (Math.random() - 0.5) * 0.02;
+              shield.position.y = (Math.random() - 0.5) * 0.02;
+
+              shieldGroup.add(shield);
+            }
+
+            group.add(shieldGroup);
+
+            for (let i = 0; i < 2; i++) {
+              const boomX = i === 0 ? -0.8 : 0.8;
+
+              const boom = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.02, 0.02, 2.0, 8),
+                new THREE.MeshStandardMaterial({
+                  color: 0x888888,
+                  metalness: 0.7,
+                  roughness: 0.3,
+                })
+              );
+              boom.position.set(boomX, -0.5, 0);
+              boom.rotation.x = Math.PI / 2;
+              group.add(boom);
+            }
+
+            const jwstSolarPanel = new THREE.Mesh(
+              new THREE.BoxGeometry(0.7, 0.02, 0.7),
+              new THREE.MeshStandardMaterial({
+                color: 0x2244aa,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x001133,
+                emissiveIntensity: 0.3,
+              })
+            );
+            jwstSolarPanel.position.y = -0.6;
+            group.add(jwstSolarPanel);
+
+            const solarGrid = new THREE.Group();
+            for (let x = 0; x < 5; x++) {
+              for (let z = 0; z < 5; z++) {
+                const cell = new THREE.Mesh(
+                  new THREE.PlaneGeometry(0.12, 0.12),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x1133aa,
+                    metalness: 0.8,
+                    roughness: 0.2,
+                    emissive: 0x001133,
+                    emissiveIntensity: 0.2,
+                    side: THREE.DoubleSide,
+                  })
+                );
+                cell.position.set(-0.3 + x * 0.13, 0.015, -0.3 + z * 0.13);
+                cell.rotation.x = -Math.PI / 2;
+                solarGrid.add(cell);
+              }
+            }
+            jwstSolarPanel.add(solarGrid);
+
+            const jwstGlow = new THREE.PointLight(0xffffcc, 0.3, 3.0);
+            jwstGlow.position.set(0, 0, 0.2);
+            group.add(jwstGlow);
+
+            break;
+
+          case "iss":
+            const truss = new THREE.Mesh(
+              new THREE.BoxGeometry(3.5, 0.15, 0.15),
+              new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                metalness: 0.9,
+                roughness: 0.2,
+                envMapIntensity: 1.5,
+              })
+            );
+            group.add(truss);
+
+            const createTrussSegment = (x) => {
+              const segment = new THREE.Group();
+              segment.position.x = x;
+
+              const vertical1 = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.015, 0.015, 0.3, 8),
+                new THREE.MeshStandardMaterial({
+                  color: 0xaaaaaa,
+                  metalness: 0.9,
+                  roughness: 0.2,
+                })
+              );
+              vertical1.position.set(0, 0, 0.1);
+              segment.add(vertical1);
+
+              const vertical2 = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.015, 0.015, 0.3, 8),
+                new THREE.MeshStandardMaterial({
+                  color: 0xaaaaaa,
+                  metalness: 0.9,
+                  roughness: 0.2,
+                })
+              );
+              vertical2.position.set(0, 0, -0.1);
+              segment.add(vertical2);
+
+              const cross1 = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.008, 0.008, 0.3, 8),
+                new THREE.MeshStandardMaterial({
+                  color: 0x999999,
+                  metalness: 0.9,
+                  roughness: 0.3,
+                })
+              );
+              cross1.rotation.x = Math.PI / 4;
+              segment.add(cross1);
+
+              const cross2 = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.008, 0.008, 0.3, 8),
+                new THREE.MeshStandardMaterial({
+                  color: 0x999999,
+                  metalness: 0.9,
+                  roughness: 0.3,
+                })
+              );
+              cross2.rotation.x = -Math.PI / 4;
+              segment.add(cross2);
+
+              return segment;
+            };
+
+            for (let x = -1.6; x <= 1.6; x += 0.4) {
+              truss.add(createTrussSegment(x));
+            }
+
+            const modulePositions = [
+              {
+                x: -1.2,
+                y: 0,
+                z: 0,
+                type: "cylinder",
+                scale: 1.0,
+                color: 0xdddddd,
+              },
+              {
+                x: -0.6,
+                y: 0,
+                z: 0,
+                type: "cylinder",
+                scale: 0.9,
+                color: 0xcccccc,
+              },
+              { x: 0, y: 0, z: 0, type: "sphere", scale: 1.2, color: 0xeeeeee }, // Node module
+              {
+                x: 0.6,
+                y: 0.1,
+                z: 0,
+                type: "cylinder",
+                scale: 0.95,
+                color: 0xbbbbbb,
+              },
+              {
+                x: 1.2,
+                y: 0,
+                z: 0,
+                type: "cylinder",
+                scale: 1.0,
+                color: 0xdddddd,
+              },
+            ];
+
+            modulePositions.forEach(({ x, y, z, type, scale, color }, idx) => {
+              let moduleGeom;
+              if (type === "cylinder") {
+                moduleGeom = new THREE.CylinderGeometry(
+                  0.2 * scale,
+                  0.2 * scale,
+                  0.5,
+                  24
+                );
+              } else {
+                moduleGeom = new THREE.SphereGeometry(0.25 * scale, 24, 24);
+              }
+
+              const moduleMat = new THREE.MeshStandardMaterial({
+                color: color,
+                metalness: 0.8,
+                roughness: 0.3,
+                envMapIntensity: 1.5,
+              });
+
+              const module = new THREE.Mesh(moduleGeom, moduleMat);
+              if (type === "cylinder") {
+                module.rotation.z = Math.PI / 2;
+              }
+              module.position.set(x, y, z);
+
+              if (idx > 0) {
+                const connector = new THREE.Mesh(
+                  new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x666666,
+                    metalness: 0.7,
+                    roughness: 0.4,
+                  })
+                );
+                connector.rotation.z = Math.PI / 2;
+                connector.position.x = (x + modulePositions[idx - 1].x) / 2;
+                connector.position.y = (y + modulePositions[idx - 1].y) / 2;
+                connector.scale.x =
+                  Math.abs(x - modulePositions[idx - 1].x) * 1.5;
+                group.add(connector);
+              }
+
+              const port = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.07, 0.07, 0.08, 16),
+                new THREE.MeshStandardMaterial({
+                  color: 0x444444,
+                  metalness: 0.6,
+                  roughness: 0.4,
+                })
+              );
+              port.rotation.x = Math.PI / 2;
+              port.position.z = 0.3;
+              module.add(port);
+
+              if (type === "cylinder") {
+                for (let j = 0; j < 2; j++) {
+                  const windowObj = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.04, 16),
+                    new THREE.MeshStandardMaterial({
+                      color: 0x88ccff,
+                      metalness: 0.9,
+                      roughness: 0.1,
+                      emissive: 0x4477aa,
+                      emissiveIntensity: 0.5,
+                      side: THREE.DoubleSide,
+                    })
+                  );
+                  windowObj.position.y = 0.1 - j * 0.2;
+                  windowObj.rotation.y = Math.PI / 2;
+                  windowObj.position.x = 0.2;
+                  module.add(windowObj);
+
+                  const windowLight = new THREE.PointLight(0xccddff, 0.2, 0.3);
+                  windowLight.position.set(0.2, 0.1 - j * 0.2, 0);
+                  module.add(windowLight);
+                }
+              }
+
+              if (idx % 2 === 0) {
+                for (let i = 0; i < 4; i++) {
+                  const angle = (i / 4) * Math.PI * 2;
+                  const handrail = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.15, 0.01, 0.02),
+                    new THREE.MeshStandardMaterial({
+                      color: 0xffffff,
+                      metalness: 0.7,
+                      roughness: 0.3,
+                    })
+                  );
+                  handrail.position.set(
+                    type === "cylinder" ? 0 : Math.cos(angle) * 0.25 * scale,
+                    Math.sin(angle) * 0.2 * scale,
+                    type === "cylinder" ? Math.sin(angle) * 0.2 * scale : 0
+                  );
+                  handrail.rotation.x = type === "cylinder" ? 0 : -angle;
+                  handrail.rotation.z = type === "cylinder" ? angle : 0;
+                  module.add(handrail);
+                }
+              }
+
+              group.add(module);
+            });
+
+            const panelPositions = [-2.0, -1.6, 1.6, 2.0];
+            const sidePositions = [0.6, -0.6];
+
+            panelPositions.forEach((x) => {
+              sidePositions.forEach((z) => {
+                const gimbal = new THREE.Group();
+                gimbal.position.set(x, 0, 0);
+                group.add(gimbal);
+
+                const joint = new THREE.Mesh(
+                  new THREE.SphereGeometry(0.06, 16, 16),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x888888,
+                    metalness: 0.9,
+                    roughness: 0.2,
+                  })
+                );
+                gimbal.add(joint);
+
+                const armBase = new THREE.Mesh(
+                  new THREE.BoxGeometry(0.1, 0.1, 0.7),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x999999,
+                    metalness: 0.8,
+                    roughness: 0.2,
+                  })
+                );
+                armBase.position.set(0, 0, z / 2);
+                gimbal.add(armBase);
+
+                const trackingJoint = new THREE.Mesh(
+                  new THREE.SphereGeometry(0.05, 16, 16),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x888888,
+                    metalness: 0.9,
+                    roughness: 0.2,
+                  })
+                );
+                trackingJoint.position.set(0, 0, z);
+                gimbal.add(trackingJoint);
+
+                const panelMount = new THREE.Mesh(
+                  new THREE.BoxGeometry(0.65, 0.05, 0.05),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x777777,
+                    metalness: 0.9,
+                    roughness: 0.2,
+                  })
+                );
+                panelMount.position.set(0, 0, z);
+                gimbal.add(panelMount);
+
+                const solarPanel = new THREE.Mesh(
+                  new THREE.BoxGeometry(0.6, 0.02, 0.4),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x2244aa,
+                    metalness: 0.7,
+                    roughness: 0.3,
+                    emissive: 0x001133,
+                    emissiveIntensity: 0.4,
+                    side: THREE.DoubleSide,
+                  })
+                );
+                solarPanel.position.set(0, 0, z);
+                solarPanel.rotation.y = Math.PI / 2;
+
+                const panelGrid = new THREE.Group();
+                for (let i = 0; i < 12; i++) {
+                  for (let j = 0; j < 8; j++) {
+                    const cell = new THREE.Mesh(
+                      new THREE.PlaneGeometry(0.045, 0.045),
+                      new THREE.MeshBasicMaterial({
+                        color: 0x0033aa,
+                        side: THREE.DoubleSide,
+                      })
+                    );
+                    cell.position.set(
+                      -0.27 + i * 0.05,
+                      0.011,
+                      -0.18 + j * 0.05
+                    );
+                    cell.rotation.x = Math.PI / 2;
+                    panelGrid.add(cell);
+                  }
+                }
+                solarPanel.add(panelGrid);
+
+                const panelReflection = new THREE.Mesh(
+                  new THREE.PlaneGeometry(0.58, 0.38),
+                  new THREE.MeshBasicMaterial({
+                    color: 0x0055ff,
+                    transparent: true,
+                    opacity: 0.15,
+                    side: THREE.DoubleSide,
+                  })
+                );
+                panelReflection.position.set(0, 0.011, 0);
+                panelReflection.rotation.x = Math.PI / 2;
+                solarPanel.add(panelReflection);
+
+                gimbal.add(solarPanel);
+              });
+            });
+
+            const radiatorPositions = [-0.9, 0.9];
+
+            radiatorPositions.forEach((x) => {
+              const radiator = new THREE.Mesh(
+                new THREE.BoxGeometry(0.5, 0.01, 0.4),
+                new THREE.MeshStandardMaterial({
+                  color: 0xffffff,
+                  metalness: 0.5,
+                  roughness: 0.4,
+                  side: THREE.DoubleSide,
+                  emissive: 0x555555,
+                  emissiveIntensity: 0.1,
+                })
+              );
+              radiator.position.set(x, -0.2, 0);
+              radiator.rotation.x = Math.PI / 2;
+
+              const tubePattern = new THREE.Group();
+              for (let i = 0; i < 8; i++) {
+                const tube = new THREE.Mesh(
+                  new THREE.BoxGeometry(0.5, 0.005, 0.002),
+                  new THREE.MeshBasicMaterial({ color: 0xcccccc })
+                );
+                tube.position.y = 0.006;
+                tube.position.z = -0.18 + i * 0.05;
+                tubePattern.add(tube);
+              }
+              radiator.add(tubePattern);
+
+              group.add(radiator);
+            });
+
+            const createPulsingLight = (x, z, color) => {
+              const light = new THREE.PointLight(color, 0.7, 0.4);
+              light.position.set(x, 0, z);
+
+              const lightBulb = new THREE.Mesh(
+                new THREE.SphereGeometry(0.02, 8, 8),
+                new THREE.MeshBasicMaterial({
+                  color: color,
+                  emissive: color,
+                  emissiveIntensity: 0.8,
+                })
+              );
+              lightBulb.position.set(x, 0, z);
+              group.add(lightBulb);
+
+              const pulseFrequency = 0.5 + Math.random() * 1.0;
+              const animate = () => {
+                const time = Date.now() * 0.001;
+                const pulse = 0.5 + 0.5 * Math.sin(time * pulseFrequency);
+                light.intensity = 0.3 + pulse * 0.5;
+                lightBulb.material.emissiveIntensity = 0.4 + pulse * 0.6;
+
+                requestAnimationFrame(animate);
+              };
+              animate();
+
+              group.add(light);
+            };
+
+            createPulsingLight(-1.7, 0, 0xff0000); 
+            createPulsingLight(1.7, 0, 0x00ff00); 
+            createPulsingLight(0, 0.2, 0xffffff); 
+
+            const roverArm = new THREE.Group();
+            roverArm.position.set(0.4, 0.1, 0.3);
+
+            const shoulderJoint = new THREE.Mesh(
+              new THREE.SphereGeometry(0.05, 16, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            roverArm.add(shoulderJoint);
+
+            const upperArm = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            upperArm.position.set(0, 0, 0.25);
+            upperArm.rotation.x = Math.PI / 2;
+            roverArm.add(upperArm);
+
+            const elbowJoint = new THREE.Mesh(
+              new THREE.SphereGeometry(0.04, 16, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            elbowJoint.position.set(0, 0, 0.5);
+            roverArm.add(elbowJoint);
+
+            const forearm = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.018, 0.018, 0.4, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            forearm.position.set(0, -0.2, 0.5);
+            forearm.rotation.x = -Math.PI / 4;
+            roverArm.add(forearm);
+
+            const wristJoint = new THREE.Mesh(
+              new THREE.SphereGeometry(0.035, 16, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            wristJoint.position.set(0, -0.4, 0.3);
+            roverArm.add(wristJoint);
+
+            const gripper = new THREE.Group();
+            gripper.position.set(0, -0.4, 0.3);
+
+            const gripperBase = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.03, 0.025, 0.08, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0xdddddd,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            gripperBase.rotation.x = Math.PI / 2;
+            gripper.add(gripperBase);
+
+            [-1, 1].forEach((side) => {
+              const finger = new THREE.Mesh(
+                new THREE.BoxGeometry(0.01, 0.06, 0.02),
+                new THREE.MeshStandardMaterial({
+                  color: 0x888888,
+                  metalness: 0.8,
+                  roughness: 0.2,
+                })
+              );
+              finger.position.set(side * 0.02, 0, 0.06);
+              gripper.add(finger);
+            });
+
+            roverArm.add(gripper);
+            group.add(roverArm);
+
+            break;
+
+          case "rover":
+            const roverBody = new THREE.Mesh(
+              new THREE.BoxGeometry(0.4, 0.15, 0.5),
+              new THREE.MeshStandardMaterial({
+                color: 0xdddddd,
+                metalness: 0.7,
+                roughness: 0.3,
+                envMapIntensity: 1.0,
+              })
+            );
+            roverBody.position.y = 0.2;
+            group.add(roverBody);
+
+            const roverBodyDetail = new THREE.Mesh(
+              new THREE.BoxGeometry(0.35, 0.08, 0.45),
+              new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                metalness: 0.8,
+                roughness: 0.2,
+              })
+            );
+            roverBodyDetail.position.y = 0.25;
+            group.add(roverBodyDetail);
+
+            const roverRTG = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.06, 0.06, 0.2, 12),
+              new THREE.MeshStandardMaterial({
+                color: 0x777777,
+                metalness: 0.8,
+                roughness: 0.2,
+              })
+            );
+            roverRTG.position.set(-0.22, 0.2, -0.2);
+            group.add(roverRTG);
+
+            for (let i = 0; i < 8; i++) {
+              const fin = new THREE.Mesh(
+                new THREE.BoxGeometry(0.15, 0.01, 0.04),
+                new THREE.MeshStandardMaterial({
+                  color: 0x666666,
+                  metalness: 0.7,
+                  roughness: 0.3,
+                })
+              );
+              fin.position.y = 0.2;
+              fin.rotation.y = (i / 8) * Math.PI * 2;
+              roverRTG.add(fin);
+            }
+
+            const rtgRoverGlow = new THREE.PointLight(0xff6a00, 0.4, 0.3);
+            rtgRoverGlow.position.set(-0.22, 0.2, -0.2);
+            group.add(rtgRoverGlow);
+
+            const wheelPositions = [
+              [-0.22, 0.12, 0.22],
+              [-0.22, 0.12, -0.22],
+              [0, 0.12, 0.22],
+              [0, 0.12, -0.22],
+              [0.22, 0.12, 0.22],
+              [0.22, 0.12, -0.22],
+            ];
+
+            wheelPositions.forEach((pos) => {
+              const wheelGroup = new THREE.Group();
+              wheelGroup.position.set(pos[0], pos[1], pos[2]);
+
+              const wheel = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.1, 0.1, 0.05, 16),
+                new THREE.MeshStandardMaterial({
+                  color: 0x333333,
+                  metalness: 0.5,
+                  roughness: 0.7,
+                  envMapIntensity: 0.8,
+                })
+              );
+              wheel.rotation.z = Math.PI / 2;
+              wheelGroup.add(wheel);
+
+              for (let i = 0; i < 12; i++) {
+                const tread = new THREE.Mesh(
+                  new THREE.BoxGeometry(0.06, 0.11, 0.02),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x222222,
+                    metalness: 0.6,
+                    roughness: 0.6,
+                  })
+                );
+                tread.rotation.z = (i / 12) * Math.PI * 2;
+                tread.position.x = Math.sin((i / 12) * Math.PI * 2) * 0.1;
+                tread.position.y = Math.cos((i / 12) * Math.PI * 2) * 0.1;
+                wheel.add(tread);
+              }
+
+              const hubCap = new THREE.Mesh(
+                new THREE.CircleGeometry(0.06, 12),
+                new THREE.MeshStandardMaterial({
+                  color: 0x555555,
+                  metalness: 0.8,
+                  roughness: 0.3,
+                  side: THREE.DoubleSide,
+                })
+              );
+              hubCap.rotation.y = Math.PI / 2;
+              hubCap.position.x = 0.025;
+              wheel.add(hubCap);
+
+              const suspension = new THREE.Mesh(
+                new THREE.BoxGeometry(0.1, 0.02, 0.02),
+                new THREE.MeshStandardMaterial({
+                  color: 0x666666,
+                  metalness: 0.7,
+                  roughness: 0.4,
+                })
+              );
+              suspension.position.x = -0.05;
+              suspension.position.y = 0.05;
+              wheelGroup.add(suspension);
+
+              group.add(wheelGroup);
+            });
+
+            const mast = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.02, 0.025, 0.3, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0x999999,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            mast.position.set(0, 0.35, 0);
+            group.add(mast);
+
+            const cameraHead = new THREE.Mesh(
+              new THREE.BoxGeometry(0.1, 0.08, 0.08),
+              new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            cameraHead.position.set(0, 0.5, 0);
+            group.add(cameraHead);
+
+            const cameraLensLeft = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.015, 0.015, 0.02, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0x111111,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: 0x222222,
+                emissiveIntensity: 0.2,
+              })
+            );
+            cameraLensLeft.rotation.x = Math.PI / 2;
+            cameraLensLeft.position.set(-0.03, 0.5, 0.05);
+            group.add(cameraLensLeft);
+
+            const cameraLensRight = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.015, 0.015, 0.02, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0x111111,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: 0x222222,
+                emissiveIntensity: 0.2,
+              })
+            );
+            cameraLensRight.rotation.x = Math.PI / 2;
+            cameraLensRight.position.set(0.03, 0.5, 0.05);
+            group.add(cameraLensRight);
+
+            const roverPanel = new THREE.Mesh(
+              new THREE.BoxGeometry(0.3, 0.01, 0.3),
+              new THREE.MeshStandardMaterial({
+                color: 0x2244aa,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x001133,
+                emissiveIntensity: 0.2,
+                side: THREE.DoubleSide,
+              })
+            );
+            roverPanel.position.set(0, 0.35, 0.15);
+            roverPanel.rotation.x = -Math.PI / 6;
+            group.add(roverPanel);
+
+            const issArm = new THREE.Group();
+            issArm.position.set(0.2, 0.25, 0.1);
+
+            const armBase = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.02, 0.03, 0.04, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            issArm.add(armBase);
+
+            const armSegment1 = new THREE.Mesh(
+              new THREE.BoxGeometry(0.15, 0.02, 0.02),
+              new THREE.MeshStandardMaterial({
+                color: 0x777777,
+                metalness: 0.8,
+                roughness: 0.2,
+              })
+            );
+            armSegment1.position.x = 0.08;
+            armSegment1.position.y = 0.05;
+            issArm.add(armSegment1);
+
+            const armJoint = new THREE.Mesh(
+              new THREE.SphereGeometry(0.02, 8, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0x666666,
+                metalness: 0.6,
+                roughness: 0.4,
+              })
+            );
+            armJoint.position.x = 0.16;
+            armJoint.position.y = 0.05;
+            issArm.add(armJoint);
+
+            const armSegment2 = new THREE.Mesh(
+              new THREE.BoxGeometry(0.12, 0.02, 0.02),
+              new THREE.MeshStandardMaterial({
+                color: 0x777777,
+                metalness: 0.8,
+                roughness: 0.2,
+              })
+            );
+            armSegment2.position.x = 0.16;
+            armSegment2.position.y = 0.12;
+            armSegment2.rotation.z = Math.PI / 3;
+            issArm.add(armSegment2);
+
+            const armTool = new THREE.Mesh(
+              new THREE.BoxGeometry(0.04, 0.04, 0.03),
+              new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            armTool.position.x = 0.23;
+            armTool.position.y = 0.18;
+            issArm.add(armTool);
+
+            group.add(issArm);
+
+            break;
+
+          case "cassini":
+            const cassiniBody = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.2, 0.2, 0.4, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xdddddd,
+                metalness: 0.7,
+                roughness: 0.3,
+                envMapIntensity: 1.2,
+              })
+            );
+            group.add(cassiniBody);
+
+            const cassiniDishGeom = new THREE.SphereGeometry(
+              0.4,
+              32,
+              16,
+              0,
+              Math.PI * 2,
+              0,
+              Math.PI / 2
+            );
+            const cassiniDishMat = new THREE.MeshStandardMaterial({
+              color: 0xeeeeee,
+              metalness: 0.8,
+              roughness: 0.2,
+              side: THREE.DoubleSide,
+            });
+            const cassiniDish = new THREE.Mesh(cassiniDishGeom, cassiniDishMat);
+            cassiniDish.scale.set(1, 1, 0.2);
+            cassiniDish.position.y = 0.35;
+            cassiniDish.rotation.x = Math.PI;
+            group.add(cassiniDish);
+
+            const cassiniDishInterior = new THREE.Mesh(
+              new THREE.CircleGeometry(0.38, 32),
+              new THREE.MeshStandardMaterial({
+                color: 0xdddddd,
+                metalness: 0.7,
+                roughness: 0.3,
+                side: THREE.DoubleSide,
+              })
+            );
+            cassiniDishInterior.position.y = 0.32;
+            cassiniDishInterior.rotation.x = Math.PI;
+            group.add(cassiniDishInterior);
+
+            const antFeed = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.03, 0.02, 0.1, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0x999999,
+                metalness: 0.8,
+                roughness: 0.2,
+              })
+            );
+            antFeed.position.y = 0.22;
+            group.add(antFeed);
+
+            const rtgPositions = [
+              [0.3, -0.1, 0],
+              [-0.3, -0.1, 0],
+            ];
+
+            rtgPositions.forEach((pos, i) => {
+              const rtgBoom = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.02, 0.02, 0.6, 8),
+                new THREE.MeshStandardMaterial({
+                  color: 0x999999,
+                  metalness: 0.7,
+                  roughness: 0.3,
+                })
+              );
+              rtgBoom.rotation.z = Math.PI / 2;
+              rtgBoom.position.set(pos[0], pos[1], pos[2]);
+              group.add(rtgBoom);
+
+              const rtgUnit = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.05, 0.05, 0.3, 12),
+                new THREE.MeshStandardMaterial({
+                  color: 0x666666,
+                  metalness: 0.7,
+                  roughness: 0.3,
+                })
+              );
+              rtgUnit.position.set(
+                pos[0] + (i === 0 ? 0.35 : -0.35),
+                pos[1],
+                pos[2]
+              );
+              rtgUnit.rotation.z = Math.PI / 2;
+              group.add(rtgUnit);
+
+              for (let j = 0; j < 8; j++) {
+                const fin = new THREE.Mesh(
+                  new THREE.BoxGeometry(0.15, 0.01, 0.04),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x555555,
+                    metalness: 0.8,
+                    roughness: 0.2,
+                  })
+                );
+                fin.position.y = 0;
+                fin.rotation.y = (j / 8) * Math.PI * 2;
+                rtgUnit.add(fin);
+              }
+
+              const cassiniRtgGlow = new THREE.PointLight(0xff6a00, 0.5, 0.4);
+              cassiniRtgGlow.position.set(
+                pos[0] + (i === 0 ? 0.35 : -0.35),
+                pos[1],
+                pos[2]
+              );
+              group.add(cassiniRtgGlow);
+            });
+
+            const magBoom = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.015, 0.015, 0.8, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0x999999,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            magBoom.position.set(0, 0, -0.5);
+            magBoom.rotation.x = Math.PI / 2;
+            group.add(magBoom);
+
+            const magInstrument = new THREE.Mesh(
+              new THREE.BoxGeometry(0.07, 0.07, 0.07),
+              new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            magInstrument.position.set(0, 0, -0.85);
+            group.add(magInstrument);
+
+            const huygens = new THREE.Group();
+            huygens.position.set(0, -0.25, 0.2);
+
+            const huygensCone = new THREE.Mesh(
+              new THREE.ConeGeometry(0.12, 0.15, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xcc9966,
+                metalness: 0.5,
+                roughness: 0.5,
+                envMapIntensity: 1.0,
+              })
+            );
+            huygensCone.rotation.x = Math.PI;
+            huygens.add(huygensCone);
+
+            const huygenHeatShield = new THREE.Mesh(
+              new THREE.CircleGeometry(0.12, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xaa7755,
+                metalness: 0.3,
+                roughness: 0.8,
+                side: THREE.DoubleSide,
+              })
+            );
+            huygenHeatShield.position.y = 0.075;
+            huygenHeatShield.rotation.x = Math.PI / 2;
+            huygens.add(huygenHeatShield);
+
+            const shieldPattern = new THREE.Mesh(
+              new THREE.RingGeometry(0.04, 0.11, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0x995533,
+                metalness: 0.3,
+                roughness: 0.8,
+                side: THREE.DoubleSide,
+              })
+            );
+            shieldPattern.position.y = 0.076;
+            shieldPattern.rotation.x = Math.PI / 2;
+            huygens.add(shieldPattern);
+
+            group.add(huygens);
+
+            const instrumentDeck = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.18, 0.18, 0.05, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xbbbbbb,
+                metalness: 0.7,
+                roughness: 0.3,
+              })
+            );
+            instrumentDeck.position.y = -0.1;
+            group.add(instrumentDeck);
+
+            for (let i = 0; i < 8; i++) {
+              const angle = (i / 8) * Math.PI * 2;
+              const r = 0.13;
+              const x = Math.cos(angle) * r;
+              const z = Math.sin(angle) * r;
+
+              const instrument = new THREE.Mesh(
+                new THREE.BoxGeometry(0.04, 0.04, 0.04),
+                new THREE.MeshStandardMaterial({
+                  color: 0x444444,
+                  metalness: 0.7,
+                  roughness: 0.3,
+                  envMapIntensity: 1.0,
+                })
+              );
+              instrument.position.set(x, -0.08, z);
+              group.add(instrument);
+            }
+
+            break;
+
+          default:
+            const fallbackBody = new THREE.Mesh(
+              new THREE.BoxGeometry(0.3, 0.3, 0.6),
+              new THREE.MeshStandardMaterial({
+                color: color || 0xdddddd,
+                metalness: 0.7,
+                roughness: 0.3,
+                envMapIntensity: 1.0,
+              })
+            );
+            group.add(fallbackBody);
+
+            const fallbackDish = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.3, 0.3, 0.05, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xeeeeee,
+                metalness: 0.7,
+                roughness: 0.3,
+                envMapIntensity: 1.2,
+              })
+            );
+            fallbackDish.rotation.x = Math.PI / 2;
+            fallbackDish.position.z = 0.3;
+            group.add(fallbackDish);
+        }
+
+        const glowLight = new THREE.PointLight(0x4477ff, 0.5, 1.5);
+        glowLight.position.set(0, 0, 0);
+        group.add(glowLight);
+
+        return group;
+      };
+
+      spacecraftData.forEach((spacecraft) => {
+        if (isMobile) {
+          spacecraft.scale *= 0.8; 
+        }
+        const model = createSimpleModel(spacecraft.modelType, 0xdddddd);
+        if (isMobile) {
+          spacecraft.scale *= 0.8; 
+        }
+        model.scale.set(spacecraft.scale, spacecraft.scale, spacecraft.scale);
+
+        let startPos = new THREE.Vector3();
+
+        if (spacecraft.startPlanet && planets[spacecraft.startPlanet]) {
+          const planetPos =
+            planets[spacecraft.startPlanet].container.position.clone();
+
+          if (spacecraft.orbitType === "landed") {
+            const surfacePos = spacecraft.landLocation
+              .clone()
+              .multiplyScalar(planets[spacecraft.startPlanet].data.radius);
+            startPos.copy(planetPos).add(surfacePos);
+
+            model.up = new THREE.Vector3(0, 1, 0);
+            model.lookAt(planetPos);
+          } else {
+            const orbitRadius =
+              spacecraft.distance ||
+              planets[spacecraft.startPlanet].data.radius * 2.5;
+            const angle = spacecraft.angle || Math.random() * Math.PI * 2;
+            const height = spacecraft.height || 0;
+
+            const x = orbitRadius * Math.cos(angle);
+            const z = orbitRadius * Math.sin(angle);
+
+            startPos = new THREE.Vector3(
+              planetPos.x + x,
+              planetPos.y + height,
+              planetPos.z + z
+            );
+
+            const tangent = new THREE.Vector3(-z, 0, x).normalize();
+            const normal = new THREE.Vector3(x, 0, z).normalize();
+
+            model.up = normal;
+            model.lookAt(model.position.clone().add(tangent));
+          }
+        } else if (spacecraft.startPosition) {
+          startPos.copy(spacecraft.startPosition);
+
+          if (spacecraft.orbitType === "escape") {
+            model.lookAt(model.position.clone().add(spacecraft.escapeVector));
+          }
+        } else {
+          const distance = spacecraft.distance || 100;
+          const angle = spacecraft.angle || Math.random() * Math.PI * 2;
+
+          startPos.set(
+            distance * Math.cos(angle),
+            (Math.random() - 0.5) * 20,
+            distance * Math.sin(angle)
+          );
+        }
+
+        const container = new THREE.Object3D();
+        container.position.copy(startPos);
+        container.add(model);
+        scene.add(container);
+
+        let trail;
+        if (spacecraft.orbitType !== "landed") {
+          const trailMaterial = new THREE.LineBasicMaterial({
+            color: 0x4488ff,
+            transparent: true,
+            opacity: 0.8,
+            linewidth: 2,
+          });
+
+          const trailGeometry = new THREE.BufferGeometry();
+          const trailPositions = new Float32Array(200 * 3);
+          trailGeometry.setAttribute(
+            "position",
+            new THREE.BufferAttribute(trailPositions, 3)
+          );
+
+          trail = new THREE.Line(trailGeometry, trailMaterial);
+          scene.add(trail);
+
+          const trailGlowMaterial = new THREE.LineBasicMaterial({
+            color: 0x77ccff,
+            transparent: true,
+            opacity: 0.4,
+            linewidth: 4,
+          });
+
+          const trailGlowGeometry = new THREE.BufferGeometry();
+          trailGlowGeometry.setAttribute(
+            "position",
+            new THREE.BufferAttribute(trailPositions.slice(), 3)
+          );
+
+          const trailGlow = new THREE.Line(
+            trailGlowGeometry,
+            trailGlowMaterial
+          );
+          scene.add(trailGlow);
+
+          spacecraft.trailGlow = trailGlow;
+        }
+
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        canvas.width = 256;
+        canvas.height = 64;
+
+        context.font = "Bold 24px Arial";
+        context.textAlign = "center";
+        context.fillStyle = "rgba(255, 255, 255, 1.0)";
+        context.fillText(spacecraft.name, 128, 32);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const labelMaterial = new THREE.SpriteMaterial({
+          map: texture,
+          transparent: true,
+          depthTest: false,
+          depthWrite: false,
+        });
+
+        const label = new THREE.Sprite(labelMaterial);
+        const labelScale = 3;
+        label.scale.set(labelScale, labelScale / 4, 1);
+        label.position.set(0, model.scale.y * 2.5, 0);
+        label.visible = false;
+
+        model.add(label);
+
+        const highlightSphere = new THREE.Mesh(
+          new THREE.SphereGeometry(2, 16, 16),
+          new THREE.MeshBasicMaterial({
+            color: 0x4488ff,
+            transparent: true,
+            opacity: 0.2,
+            side: THREE.BackSide,
+          })
+        );
+        highlightSphere.visible = false;
+        model.add(highlightSphere);
+
+        spacecraft.highlightSphere = highlightSphere;
+
+        spacecrafts[spacecraft.name] = {
+          mesh: model,
+          container: container,
+          data: spacecraft,
+          trail: trail,
+          trailPositions: [],
+          angle: spacecraft.angle || 0,
+          label,
+        };
+      });
+
+      return spacecrafts;
+    };
 
     if (planets["Saturn"] && planets["Saturn"].data.rings) {
       const saturnMesh = planets["Saturn"].mesh;
@@ -3070,9 +5321,32 @@ const VoidVoyager = () => {
         );
 
         const canvas = document.createElement("canvas");
-        canvas.width = 32;
-        canvas.height = 32;
-        const ctx = canvas.getContext("2d");
+        const context = canvas.getContext("2d");
+        canvas.width = 512;
+        canvas.height = 128;
+
+        const gradientGlow = context.createRadialGradient(
+          256,
+          64,
+          10,
+          256,
+          64,
+          80
+        );
+        gradientGlow.addColorStop(0, "rgba(100, 180, 255, 0.8)");
+        gradientGlow.addColorStop(1, "rgba(100, 180, 255, 0)");
+
+        context.fillStyle = gradientGlow;
+        context.fillRect(0, 0, 512, 128);
+
+        context.font = "Bold 40px Arial";
+        context.textAlign = "center";
+        context.strokeStyle = "rgba(0, 0, 0, 0.8)";
+        context.lineWidth = 6;
+        context.strokeText(spacecraft.name, 256, 64);
+
+        context.fillStyle = "rgba(255, 255, 255, 1.0)";
+        context.fillText(spacecraft.name, 256, 64);
 
         ctx.beginPath();
         ctx.arc(16, 16, 8, 0, Math.PI * 2);
@@ -3357,13 +5631,23 @@ const VoidVoyager = () => {
     planetsRef.current = planets;
     orbitsRef.current = orbits;
     moonsRef.current = moons;
+    const spacecraft = createSpacecrafts();
+    spacecraftRef.current = spacecraft;
 
     const clock = new THREE.Clock();
     let frameSkip = 0;
+    const maxFrameSkip = isMobile ? 2 : 0;
 
     const animate = () => {
       const animationId = requestAnimationFrame(animate);
       animationIdRef.current = animationId;
+
+      if (isMobile) {
+        frameSkip = (frameSkip + 1) % maxFrameSkip;
+        if (frameSkip !== 0) {
+          return;
+        }
+      }
 
       const now = performance.now();
       const delta = clock.getDelta();
@@ -3386,6 +5670,17 @@ const VoidVoyager = () => {
         sunGlow.material.uniforms.time
       ) {
         sunGlow.material.uniforms.time.value += delta;
+      }
+
+      if (spacecraftRef.current && visibilityRef.current) {
+        const visibility = visibilityRef.current;
+        Object.values(spacecraftRef.current).forEach((spacecraft) => {
+          spacecraft.container.visible = visibility.showSpacecraft;
+          if (spacecraft.trail) {
+            spacecraft.trail.visible =
+              visibility.showSpacecraft && visibility.showOrbits;
+          }
+        });
       }
 
       if (starsRef.current) {
@@ -3699,6 +5994,204 @@ const VoidVoyager = () => {
         });
       }
 
+      if (spacecraftRef.current) {
+        Object.values(spacecraftRef.current).forEach((spacecraft) => {
+          if (spacecraft.data.orbitType === "landed") {
+            if (
+              spacecraft.data.startPlanet &&
+              planets[spacecraft.data.startPlanet]
+            ) {
+              const planetPos =
+                planets[spacecraft.data.startPlanet].container.position.clone();
+              const surfacePos = spacecraft.data.landLocation
+                .clone()
+                .multiplyScalar(
+                  planets[spacecraft.data.startPlanet].data.radius
+                );
+
+              spacecraft.container.position.copy(planetPos).add(surfacePos);
+              spacecraft.mesh.lookAt(planetPos);
+            }
+          } else if (spacecraft.data.orbitType === "planetary") {
+            if (
+              spacecraft.data.startPlanet &&
+              planets[spacecraft.data.startPlanet]
+            ) {
+              const planetPos =
+                planets[spacecraft.data.startPlanet].container.position.clone();
+
+              spacecraft.angle += spacecraft.data.speed * currentSpeed;
+
+              const orbitRadius =
+                spacecraft.data.distance ||
+                planets[spacecraft.data.startPlanet].data.radius * 2.5;
+              const height = spacecraft.data.height || 0;
+
+              const x = orbitRadius * Math.cos(spacecraft.angle);
+              const z = orbitRadius * Math.sin(spacecraft.angle);
+
+              spacecraft.container.position.set(
+                planetPos.x + x,
+                planetPos.y + height,
+                planetPos.z + z
+              );
+
+              const tangent = new THREE.Vector3(-z, 0, x).normalize();
+              const normal = new THREE.Vector3(x, 0, z).normalize();
+
+              spacecraft.mesh.up = normal;
+              spacecraft.mesh.lookAt(
+                spacecraft.mesh.position.clone().add(tangent)
+              );
+
+              if (spacecraft.trail) {
+                spacecraft.trailPositions.push(
+                  spacecraft.container.position.clone()
+                );
+                if (spacecraft.trailPositions.length > (isMobile ? 50 : 200)) {
+                  spacecraft.trailPositions.shift();
+                }
+
+                const positions =
+                  spacecraft.trail.geometry.attributes.position.array;
+
+                for (let i = 0; i < spacecraft.trailPositions.length; i++) {
+                  const pos = spacecraft.trailPositions[i];
+                  positions[i * 3] = pos.x;
+                  positions[i * 3 + 1] = pos.y;
+                  positions[i * 3 + 2] = pos.z;
+                }
+
+                spacecraft.trail.geometry.attributes.position.needsUpdate = true;
+                spacecraft.trail.geometry.setDrawRange(
+                  0,
+                  spacecraft.trailPositions.length
+                );
+
+                if (spacecraft.trailGlow) {
+                  spacecraft.trailGlow.geometry.attributes.position.array.set(
+                    positions
+                  );
+                  spacecraft.trailGlow.geometry.attributes.position.needsUpdate = true;
+                  spacecraft.trailGlow.geometry.setDrawRange(
+                    0,
+                    spacecraft.trailPositions.length
+                  );
+                }
+              }
+            }
+          } else if (spacecraft.data.orbitType === "elliptical") {
+            const params = spacecraft.data.orbitParams;
+            spacecraft.angle +=
+              (spacecraft.data.speed * currentSpeed) % (Math.PI * 2);
+
+            const x = params.semiMajor * Math.cos(spacecraft.angle);
+            const z = params.semiMinor * Math.sin(spacecraft.angle);
+
+            const pos = new THREE.Vector3(x, 0, z);
+            pos.applyAxisAngle(new THREE.Vector3(1, 0, 0), params.incline || 0);
+            pos.add(params.center || new THREE.Vector3(0, 0, 0));
+
+            spacecraft.container.position.copy(pos);
+
+            const tangent = new THREE.Vector3(
+              -params.semiMajor * Math.sin(spacecraft.angle),
+              0,
+              params.semiMinor * Math.cos(spacecraft.angle)
+            ).normalize();
+
+            tangent.applyAxisAngle(
+              new THREE.Vector3(1, 0, 0),
+              params.incline || 0
+            );
+
+            spacecraft.mesh.lookAt(
+              spacecraft.container.position.clone().add(tangent)
+            );
+
+            if (spacecraft.trail) {
+              spacecraft.trailPositions.push(
+                spacecraft.container.position.clone()
+              );
+              if (spacecraft.trailPositions.length > 100) {
+                spacecraft.trailPositions.shift();
+              }
+
+              const positions =
+                spacecraft.trail.geometry.attributes.position.array;
+
+              for (let i = 0; i < spacecraft.trailPositions.length; i++) {
+                const pos = spacecraft.trailPositions[i];
+                positions[i * 3] = pos.x;
+                positions[i * 3 + 1] = pos.y;
+                positions[i * 3 + 2] = pos.z;
+              }
+
+              spacecraft.trail.geometry.attributes.position.needsUpdate = true;
+              spacecraft.trail.geometry.setDrawRange(
+                0,
+                spacecraft.trailPositions.length
+              );
+            }
+          } else if (spacecraft.data.orbitType === "escape") {
+            const escapeVector =
+              spacecraft.data.escapeVector || new THREE.Vector3(1, 0, 0);
+            spacecraft.container.position.add(
+              escapeVector
+                .clone()
+                .multiplyScalar(spacecraft.data.speed * currentSpeed)
+            );
+
+            if (spacecraft.trail) {
+              spacecraft.trailPositions.push(
+                spacecraft.container.position.clone()
+              );
+              if (spacecraft.trailPositions.length > 100) {
+                spacecraft.trailPositions.shift();
+              }
+
+              const positions =
+                spacecraft.trail.geometry.attributes.position.array;
+
+              for (let i = 0; i < spacecraft.trailPositions.length; i++) {
+                const pos = spacecraft.trailPositions[i];
+                positions[i * 3] = pos.x;
+                positions[i * 3 + 1] = pos.y;
+                positions[i * 3 + 2] = pos.z;
+              }
+
+              spacecraft.trail.geometry.attributes.position.needsUpdate = true;
+              spacecraft.trail.geometry.setDrawRange(
+                0,
+                spacecraft.trailPositions.length
+              );
+            }
+          } else if (spacecraft.data.orbitType === "l2") {
+            if (
+              spacecraft.data.startPlanet &&
+              planets[spacecraft.data.startPlanet]
+            ) {
+              const planetPos =
+                planets[spacecraft.data.startPlanet].container.position.clone();
+              const sunDir = planetPos.clone().normalize();
+
+              const l2Pos = planetPos
+                .clone()
+                .add(sunDir.multiplyScalar(spacecraft.data.distance || 10));
+
+              spacecraft.container.position.copy(l2Pos);
+              spacecraft.mesh.lookAt(planetPos);
+            }
+          }
+
+          if (selectedPlanet === spacecraft.data.name) {
+            spacecraft.label.visible = true;
+          } else {
+            spacecraft.label.visible = false;
+          }
+        });
+      }
+
       renderer.render(scene, camera);
     };
 
@@ -3756,94 +6249,203 @@ const VoidVoyager = () => {
         mountRef.current.removeChild(renderer.domElement);
       }
     };
+
+    if (highlightAnimationRef.current) {
+      cancelAnimationFrame(highlightAnimationRef.current);
+      highlightAnimationRef.current = null;
+    }
   }, [isMobile, handlePointerMove, handlePointerUp]);
 
   const followingPlanetRef = useRef(null);
 
-  const focusOnPlanet = useCallback((planetName) => {
+  const focusOnPlanet = useCallback((objectName) => {
     if (!cameraRef.current || !controlsRef.current) return;
 
     if (focusAnimationIdRef.current) {
       cancelAnimationFrame(focusAnimationIdRef.current);
     }
 
-    followingPlanetRef.current = planetName;
+    followingPlanetRef.current = objectName;
 
-    const planet = planetName ? planetsRef.current[planetName] : null;
+    const isSpacecraft =
+      spacecraftRef.current && spacecraftRef.current[objectName];
+    const isPlanet = planetsRef.current && planetsRef.current[objectName];
 
-    const targetPos = new THREE.Vector3();
+    if (isSpacecraft) {
+      const animate = () => {
+        const spacecraft = spacecraftRef.current[objectName];
 
-    if (planet) {
-      targetPos.copy(planet.container.position);
-
-      if (planet.mesh) {
-        const meshOffset = new THREE.Vector3();
-        planet.mesh.getWorldPosition(meshOffset);
-        planet.container.getWorldPosition(targetPos);
-      }
-    } else {
-      targetPos.set(0, 0, 0);
-    }
-
-    let distance = 100;
-
-    if (planet) {
-      let maxMoonDistance = 0;
-
-      if (
-        moonsRef.current[planetName] &&
-        moonsRef.current[planetName].length > 0
-      ) {
-        moonsRef.current[planetName].forEach((moon) => {
-          if (moon.data.distance > maxMoonDistance) {
-            maxMoonDistance = moon.data.distance;
+        if (!spacecraft || !cameraRef.current || !controlsRef.current) {
+          if (focusAnimationIdRef.current) {
+            cancelAnimationFrame(focusAnimationIdRef.current);
+            focusAnimationIdRef.current = null;
           }
-        });
-      }
+          return;
+        }
 
-      distance = planet.data.radius * 3 + maxMoonDistance * 2.5;
-    }
+        const targetPos = new THREE.Vector3();
+        spacecraft.container.getWorldPosition(targetPos);
 
-    const offset = new THREE.Vector3(distance, distance * 0.7, distance);
+        if (
+          spacecraft.data.startPlanet &&
+          spacecraft.data.orbitType === "planetary"
+        ) {
+          const planet = planetsRef.current[spacecraft.data.startPlanet];
 
-    const startPos = cameraRef.current.position.clone();
-    const startTarget = controlsRef.current.target.clone();
+          if (planet) {
+            const planetPos = new THREE.Vector3();
+            planet.container.getWorldPosition(planetPos);
 
-    const endPos = planet
-      ? new THREE.Vector3().addVectors(targetPos, offset)
-      : new THREE.Vector3(0, 30, 100);
+            const midpoint = new THREE.Vector3()
+              .addVectors(targetPos, planetPos)
+              .multiplyScalar(0.5);
+            const distance = targetPos.distanceTo(planetPos) * 1.5;
 
-    let frame = 0;
-    const totalFrames = 100;
+            const offsetDir = new THREE.Vector3()
+              .subVectors(cameraRef.current.position, midpoint)
+              .normalize();
+            const offset = offsetDir.multiplyScalar(distance);
 
-    const animateCamera = () => {
-      if (frame <= totalFrames) {
-        const progress = frame / totalFrames;
+            controlsRef.current.target.lerp(midpoint, 0.05);
+            cameraRef.current.position.lerp(
+              new THREE.Vector3().addVectors(midpoint, offset),
+              0.05
+            );
+          } else {
+            controlsRef.current.target.lerp(targetPos, 0.05);
 
-        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+            const distance = spacecraft.data.scale * 20;
+            const offsetDir = new THREE.Vector3()
+              .subVectors(cameraRef.current.position, targetPos)
+              .normalize();
+            const offset = offsetDir.multiplyScalar(distance);
 
-        cameraRef.current.position.lerpVectors(startPos, endPos, easeOutCubic);
+            cameraRef.current.position.lerp(
+              new THREE.Vector3().addVectors(targetPos, offset),
+              0.05
+            );
+          }
+        } else {
+          controlsRef.current.target.lerp(targetPos, 0.05);
 
-        const currentTarget = new THREE.Vector3().lerpVectors(
-          startTarget,
-          targetPos,
-          easeOutCubic
-        );
-        controlsRef.current.target.copy(currentTarget);
+          const distance = spacecraft.data.scale * 20;
+          const offsetDir = new THREE.Vector3()
+            .subVectors(cameraRef.current.position, targetPos)
+            .normalize();
+          const offset = offsetDir.multiplyScalar(distance);
+
+          cameraRef.current.position.lerp(
+            new THREE.Vector3().addVectors(targetPos, offset),
+            0.05
+          );
+        }
 
         controlsRef.current.update();
 
-        if (rendererRef.current && sceneRef.current) {
-          rendererRef.current.render(sceneRef.current, cameraRef.current);
+        focusAnimationIdRef.current = requestAnimationFrame(animate);
+      };
+
+      animate();
+    }
+    else {
+      const planet = objectName ? planetsRef.current[objectName] : null;
+
+      const targetPos = new THREE.Vector3();
+
+      if (planet) {
+        planet.container.getWorldPosition(targetPos);
+
+        if (planet.mesh) {
+          const meshOffset = new THREE.Vector3();
+          planet.mesh.getWorldPosition(meshOffset);
+          planet.container.getWorldPosition(targetPos);
+        }
+      } else {
+        targetPos.set(0, 0, 0);
+      }
+
+      let distance = 100;
+
+      if (planet) {
+        let maxMoonDistance = 0;
+
+        if (
+          moonsRef.current[objectName] &&
+          moonsRef.current[objectName].length > 0
+        ) {
+          moonsRef.current[objectName].forEach((moon) => {
+            if (moon.data.distance > maxMoonDistance) {
+              maxMoonDistance = moon.data.distance;
+            }
+          });
         }
 
-        frame++;
-        focusAnimationIdRef.current = requestAnimationFrame(animateCamera);
+        distance = planet.data.radius * 3 + maxMoonDistance * 2.5;
+      }
+
+      const offset = new THREE.Vector3(distance, distance * 0.7, distance);
+
+      const startPos = cameraRef.current.position.clone();
+      const startTarget = controlsRef.current.target.clone();
+
+      const endPos = planet
+        ? new THREE.Vector3().addVectors(targetPos, offset)
+        : new THREE.Vector3(0, 30, 100);
+
+      let frame = 0;
+      const totalFrames = 100;
+
+      const animateCamera = () => {
+        if (frame <= totalFrames) {
+          const progress = frame / totalFrames;
+          const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+
+          cameraRef.current.position.lerpVectors(
+            startPos,
+            endPos,
+            easeOutCubic
+          );
+
+          const currentTarget = new THREE.Vector3().lerpVectors(
+            startTarget,
+            targetPos,
+            easeOutCubic
+          );
+          controlsRef.current.target.copy(currentTarget);
+
+          controlsRef.current.update();
+
+          if (rendererRef.current && sceneRef.current) {
+            rendererRef.current.render(sceneRef.current, cameraRef.current);
+          }
+
+          frame++;
+          focusAnimationIdRef.current = requestAnimationFrame(animateCamera);
+        }
+      };
+
+      animateCamera();
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isMobile) {
+        if (animationIdRef.current) {
+          cancelAnimationFrame(animationIdRef.current);
+          animationIdRef.current = null;
+        }
+      } else if (!animationIdRef.current) {
+        animationIdRef.current = requestAnimationFrame(animate);
       }
     };
-
-    animateCamera();
-  }, []);
+  
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isMobile]);
 
   const toggleControlPanel = () => {
     setControlsOpen(!controlsOpen);
@@ -3929,7 +6531,7 @@ const VoidVoyager = () => {
         </h2>
 
         <div className={`${isMobile ? "space-y-2" : "space-y-4"}`}>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <label className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition-colors duration-200 group">
               <div className="relative">
                 <input
@@ -3940,11 +6542,11 @@ const VoidVoyager = () => {
                 />
                 <div
                   className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
-                    ${
-                      showPlanets
-                        ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
-                        : "border-blue-400/50 bg-gray-800/50"
-                    }`}
+          ${
+            showPlanets
+              ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
+              : "border-blue-400/50 bg-gray-800/50"
+          }`}
                 >
                   <svg
                     className={`h-3 w-3 text-white ${
@@ -3974,11 +6576,11 @@ const VoidVoyager = () => {
                 />
                 <div
                   className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
-                    ${
-                      showOrbits
-                        ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
-                        : "border-blue-400/50 bg-gray-800/50"
-                    }`}
+          ${
+            showOrbits
+              ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
+              : "border-blue-400/50 bg-gray-800/50"
+          }`}
                 >
                   <svg
                     className={`h-3 w-3 text-white ${
@@ -4008,11 +6610,11 @@ const VoidVoyager = () => {
                 />
                 <div
                   className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
-                    ${
-                      showMoons
-                        ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
-                        : "border-blue-400/50 bg-gray-800/50"
-                    }`}
+          ${
+            showMoons
+              ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
+              : "border-blue-400/50 bg-gray-800/50"
+          }`}
                 >
                   <svg
                     className={`h-3 w-3 text-white ${
@@ -4030,6 +6632,40 @@ const VoidVoyager = () => {
                 </div>
               </div>
               <Moon className="w-4 h-4 text-blue-300" />
+            </label>
+
+            <label className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition-colors duration-200 group">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={showSpacecraft}
+                  onChange={(e) => setShowSpacecraft(e.target.checked)}
+                  className="opacity-0 absolute h-5 w-5"
+                />
+                <div
+                  className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
+          ${
+            showSpacecraft
+              ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
+              : "border-blue-400/50 bg-gray-800/50"
+          }`}
+                >
+                  <svg
+                    className={`h-3 w-3 text-white ${
+                      showSpacecraft ? "opacity-100" : "opacity-0"
+                    }`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+              </div>
+              <Rocket className="w-4 h-4 text-blue-300" />
             </label>
           </div>
         </div>
@@ -4117,50 +6753,21 @@ const VoidVoyager = () => {
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
-            Focus Planet
+            Focus Planet & Spacecraft
           </p>
-          <div className="relative">
-            <select
-              value={selectedPlanet || ""}
-              onChange={(e) => {
-                const planet = e.target.value || null;
-                setSelectedPlanet(planet);
-                focusOnPlanet(planet);
-
-                if (!planet) {
-                  controlsRef.current.enableDamping = true;
-                  controlsRef.current.enableRotate = true;
-                  controlsRef.current.enableZoom = true;
-                } else {
-                  controlsRef.current.enableDamping = true;
-                  controlsRef.current.enableRotate = true;
-                  controlsRef.current.enableZoom = true;
-                  controlsRef.current.maxDistance = 500;
-                  controlsRef.current.minDistance = 10;
-                }
-
-                if (isMobile) {
-                  setControlsOpen(false);
-                }
-              }}
-              className="bg-gray-800/70 text-white text-sm p-3 pr-10 rounded-xl w-full border border-blue-500/30 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 appearance-none"
+          <div className="relative w-full">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full flex items-center justify-between bg-gray-800/90 text-white text-sm p-3 rounded-xl border border-blue-500/40 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
               style={{
                 boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.3)",
+                background:
+                  "linear-gradient(to bottom, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))",
               }}
             >
-              <option value="">Solar System</option>
-              <option value="Mercury">Mercury</option>
-              <option value="Venus">Venus</option>
-              <option value="Earth">Earth</option>
-              <option value="Mars">Mars</option>
-              <option value="Jupiter">Jupiter</option>
-              <option value="Saturn">Saturn</option>
-              <option value="Uranus">Uranus</option>
-              <option value="Neptune">Neptune</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-400">
+              <span>{selectedPlanet || "Solar System"}</span>
               <svg
-                className="w-4 h-4"
+                className="w-4 h-4 text-blue-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -4169,10 +6776,108 @@ const VoidVoyager = () => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
+                  d={isDropdownOpen ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}
                 />
               </svg>
-            </div>
+            </button>
+
+            {isDropdownOpen && (
+              <div
+                className="absolute z-50 w-full mt-1 bg-gray-800/95 rounded-lg shadow-lg border border-blue-500/30 overflow-hidden"
+                style={{
+                  maxHeight: "300px",
+                  overflowY: "auto",
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                <div
+                  className="px-4 py-2 cursor-pointer hover:bg-blue-500/20 transition-colors border-b border-blue-500/20"
+                  onClick={() => {
+                    setSelectedPlanet(null);
+                    setIsDropdownOpen(false);
+                    controlsRef.current.enableDamping = true;
+                    controlsRef.current.enableRotate = true;
+                    controlsRef.current.enableZoom = true;
+                    if (isMobile) {
+                      setControlsOpen(false);
+                    }
+                  }}
+                >
+                  <div className="flex items-center">
+                    <Globe className="w-4 h-4 mr-2 text-yellow-400" />
+                    <span>Solar System</span>
+                  </div>
+                </div>
+
+                <div className="border-b border-blue-500/20">
+                  <div className="px-4 py-1 text-xs text-blue-300 font-medium bg-blue-900/20">
+                    Planets
+                  </div>
+                  {[
+                    "Mercury",
+                    "Venus",
+                    "Earth",
+                    "Mars",
+                    "Jupiter",
+                    "Saturn",
+                    "Uranus",
+                    "Neptune",
+                  ].map((planet) => (
+                    <div
+                      key={planet}
+                      className="px-4 py-2 pl-6 cursor-pointer hover:bg-blue-500/20 transition-colors"
+                      onClick={() => {
+                        setSelectedPlanet(planet);
+                        setIsDropdownOpen(false);
+                        focusOnPlanet(planet);
+                        if (isMobile) {
+                          setControlsOpen(false);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center">
+                        <CircleDashed className="w-3 h-3 mr-2 text-blue-400" />
+                        <span>{planet}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div>
+                  <div className="px-4 py-1 text-xs text-blue-300 font-medium bg-blue-900/20">
+                    Spacecrafts
+                  </div>
+                  {[
+                    "Voyager 1",
+                    "Voyager 2",
+                    "New Horizons",
+                    "Parker Solar Probe",
+                    "James Webb",
+                    "ISS",
+                    "Perseverance",
+                    "Cassini",
+                  ].map((spacecraft) => (
+                    <div
+                      key={spacecraft}
+                      className="px-4 py-2 pl-6 cursor-pointer hover:bg-blue-500/20 transition-colors"
+                      onClick={() => {
+                        setSelectedPlanet(spacecraft);
+                        setIsDropdownOpen(false);
+                        focusOnPlanet(spacecraft);
+                        if (isMobile) {
+                          setControlsOpen(false);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center">
+                        <Rocket className="w-3 h-3 mr-2 text-blue-400" />
+                        <span>{spacecraft}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
