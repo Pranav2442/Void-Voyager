@@ -731,7 +731,7 @@ const VoidVoyager = () => {
         startPosition: new THREE.Vector3(180, 40, 180),
         orbitType: "escape",
         escapeVector: new THREE.Vector3(0.5, 0.2, 0.5).normalize(),
-        scale: 1.5,
+        scale: 2.5,
         speed: 0.015,
         distance: 230,
         angle: Math.PI * 0.7,
@@ -745,7 +745,7 @@ const VoidVoyager = () => {
         startPosition: new THREE.Vector3(-160, -20, 200),
         orbitType: "escape",
         escapeVector: new THREE.Vector3(-0.6, -0.1, 0.7).normalize(),
-        scale: 1.5,
+        scale: 2.5,
         speed: 0.014,
         distance: 210,
         angle: Math.PI * 1.3,
@@ -759,7 +759,7 @@ const VoidVoyager = () => {
         startPosition: new THREE.Vector3(120, 15, -180),
         orbitType: "escape",
         escapeVector: new THREE.Vector3(0.3, 0.1, -0.9).normalize(),
-        scale: 1.2,
+        scale: 2,
         speed: 0.016,
         distance: 190,
         angle: Math.PI * 1.8,
@@ -2827,26 +2827,29 @@ const VoidVoyager = () => {
 
         switch (type) {
           case "voyager":
-            const mainBus = new THREE.Mesh(
-              new THREE.BoxGeometry(0.7, 0.3, 1.2),
-              new THREE.MeshStandardMaterial({
-                color: 0xf0f0f0,
-                metalness: 0.9,
-                roughness: 0.2,
-                envMapIntensity: 2.0,
-              })
-            );
+            const mainBusGeometry = new THREE.BoxGeometry(0.7, 0.3, 1.2);
+            const mainBusMaterial = new THREE.MeshStandardMaterial({
+              color: 0xffe066,
+              metalness: 0.9,
+              roughness: 0.2,
+              emissive: 0xaa7700,
+              emissiveIntensity: 0.4,
+              envMapIntensity: 2.5,
+            });
+            const mainBus = new THREE.Mesh(mainBusGeometry, mainBusMaterial);
             group.add(mainBus);
+
+            const goldFoilMaterial = new THREE.MeshStandardMaterial({
+              color: 0xffd700,
+              metalness: 1.0,
+              roughness: 0.2,
+              emissive: 0xdd9900,
+              emissiveIntensity: 0.5,
+            });
 
             const busDetail = new THREE.Mesh(
               new THREE.BoxGeometry(0.65, 0.25, 1.1),
-              new THREE.MeshStandardMaterial({
-                color: 0xe8d170,
-                metalness: 1.0,
-                roughness: 0.3,
-                emissive: 0x332200,
-                emissiveIntensity: 0.1,
-              })
+              goldFoilMaterial
             );
             busDetail.position.y = 0.01;
             group.add(busDetail);
@@ -2861,12 +2864,12 @@ const VoidVoyager = () => {
               Math.PI / 2
             );
             const dishMaterial = new THREE.MeshStandardMaterial({
-              color: 0xffffff,
+              color: 0xfff6e0,
               metalness: 0.9,
               roughness: 0.1,
               side: THREE.DoubleSide,
-              emissive: 0xaaaaaa,
-              emissiveIntensity: 0.1,
+              emissive: 0xddbb77,
+              emissiveIntensity: 0.5,
             });
             const dish = new THREE.Mesh(dishGeometry, dishMaterial);
             dish.rotation.x = Math.PI / 2;
@@ -2885,12 +2888,12 @@ const VoidVoyager = () => {
                 Math.PI / 2
               ),
               new THREE.MeshStandardMaterial({
-                color: 0xf8f8f8,
-                metalness: 0.8,
-                roughness: 0.2,
+                color: 0xfffbe6,
+                metalness: 0.9,
+                roughness: 0.1,
                 side: THREE.DoubleSide,
-                emissive: 0x555555,
-                emissiveIntensity: 0.1,
+                emissive: 0xaa9955,
+                emissiveIntensity: 0.3,
               })
             );
             dishInterior.position.z = 0.65;
@@ -2901,11 +2904,13 @@ const VoidVoyager = () => {
             for (let i = 0; i < 4; i++) {
               const angle = (i / 4) * Math.PI * 2;
               const strut = new THREE.Mesh(
-                new THREE.BoxGeometry(0.05, 0.05, 0.3),
+                new THREE.CylinderGeometry(0.015, 0.015, 0.35, 8),
                 new THREE.MeshStandardMaterial({
-                  color: 0xcccccc,
-                  metalness: 0.8,
+                  color: 0xccbb88,
+                  metalness: 0.9,
                   roughness: 0.2,
+                  emissive: 0x997755,
+                  emissiveIntensity: 0.3,
                 })
               );
               strut.position.set(
@@ -2913,17 +2918,32 @@ const VoidVoyager = () => {
                 Math.sin(angle) * 0.4,
                 0.45
               );
+              strut.rotation.x = Math.PI / 6;
               group.add(strut);
             }
 
-            const rtgBoom = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.04, 0.04, 2.0, 8),
+            const feedHorn = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.1, 0.15, 0.2, 16),
               new THREE.MeshStandardMaterial({
-                color: 0xaaaaaa,
+                color: 0xe6d5b8,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: 0xaa9966,
+                emissiveIntensity: 0.3,
+              })
+            );
+            feedHorn.rotation.x = Math.PI / 2;
+            feedHorn.position.z = 0.55;
+            group.add(feedHorn);
+
+            const rtgBoom = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.04, 0.04, 2.0, 12),
+              new THREE.MeshStandardMaterial({
+                color: 0xddcc99,
                 metalness: 0.7,
                 roughness: 0.3,
-                emissive: 0x222222,
-                emissiveIntensity: 0.1,
+                emissive: 0x997755,
+                emissiveIntensity: 0.2,
               })
             );
             rtgBoom.rotation.z = Math.PI / 2;
@@ -2931,53 +2951,55 @@ const VoidVoyager = () => {
             group.add(rtgBoom);
 
             const rtgCylinder = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.12, 0.12, 0.5, 16),
+              new THREE.CylinderGeometry(0.12, 0.12, 0.6, 24),
               new THREE.MeshStandardMaterial({
-                color: 0x888888,
+                color: 0xddb06f,
                 metalness: 0.9,
                 roughness: 0.2,
-                emissive: 0x330000,
-                emissiveIntensity: 0.2,
+                emissive: 0x884400,
+                emissiveIntensity: 0.3,
               })
             );
-            rtgCylinder.position.set(-1.8, 0, 0);
+            rtgCylinder.position.set(-1.9, 0, 0);
             rtgCylinder.rotation.z = Math.PI / 2;
             group.add(rtgCylinder);
 
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 18; i++) {
               const fin = new THREE.Mesh(
-                new THREE.BoxGeometry(0.08, 0.4, 0.01),
+                new THREE.BoxGeometry(0.08, 0.5, 0.015),
                 new THREE.MeshStandardMaterial({
-                  color: 0x555555,
+                  color: 0xd4af37,
                   metalness: 0.9,
                   roughness: 0.2,
-                  emissive: 0x220000,
-                  emissiveIntensity: 0.2,
+                  emissive: 0x553300,
+                  emissiveIntensity: 0.3,
                 })
               );
-              fin.position.set(-1.8, 0, 0);
+              fin.position.set(-1.9, 0, 0);
               fin.rotation.z = Math.PI / 2;
-              fin.rotation.y = (i / 12) * Math.PI * 2;
+              fin.rotation.y = (i / 18) * Math.PI * 2;
               rtgCylinder.add(fin);
             }
 
             const rtgHot = new THREE.Mesh(
-              new THREE.SphereGeometry(0.06, 16, 16),
+              new THREE.SphereGeometry(0.08, 16, 16),
               new THREE.MeshStandardMaterial({
-                color: 0xff3300,
-                emissive: 0xff0000,
-                emissiveIntensity: 0.8,
+                color: 0xff8800,
+                emissive: 0xff5500,
+                emissiveIntensity: 2.0,
               })
             );
-            rtgHot.position.set(-2.05, 0, 0);
+            rtgHot.position.set(-2.2, 0, 0);
             group.add(rtgHot);
 
             const scienceBoom = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.03, 0.03, 1.8, 8),
+              new THREE.CylinderGeometry(0.03, 0.03, 2.2, 12),
               new THREE.MeshStandardMaterial({
-                color: 0xaaaaaa,
+                color: 0xddcc99,
                 metalness: 0.7,
                 roughness: 0.3,
+                emissive: 0x997755,
+                emissiveIntensity: 0.2,
               })
             );
             scienceBoom.position.set(1.0, 0, 0);
@@ -2985,131 +3007,181 @@ const VoidVoyager = () => {
             group.add(scienceBoom);
 
             const instruments = new THREE.Group();
-            instruments.position.set(1.8, 0, 0);
+            instruments.position.set(2.0, 0, 0);
 
-            const mainInstrument = new THREE.Mesh(
-              new THREE.BoxGeometry(0.3, 0.2, 0.3),
+            const voyagerMagInstrument = new THREE.Mesh(
+              new THREE.BoxGeometry(0.3, 0.3, 0.3),
               new THREE.MeshStandardMaterial({
-                color: 0x222222,
+                color: 0xc0b080,
                 metalness: 0.7,
                 roughness: 0.2,
-                emissive: 0x111111,
-                emissiveIntensity: 0.1,
+                emissive: 0x886633,
+                emissiveIntensity: 0.2,
               })
             );
-            instruments.add(mainInstrument);
+            instruments.add(voyagerMagInstrument);
 
-            const camera1 = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.06, 0.08, 0.12, 8),
+            const plasmaDetector = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.1, 0.12, 0.2, 16),
               new THREE.MeshStandardMaterial({
-                color: 0x111111,
+                color: 0xcaa472,
                 metalness: 0.6,
                 roughness: 0.3,
+                emissive: 0x775533,
+                emissiveIntensity: 0.2,
+              })
+            );
+            plasmaDetector.rotation.x = Math.PI / 2;
+            plasmaDetector.position.set(0.1, 0.2, 0.2);
+            instruments.add(plasmaDetector);
+
+            const camera1 = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.08, 0.1, 0.15, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xd4b66a,
+                metalness: 0.6,
+                roughness: 0.3,
+                emissive: 0x886622,
+                emissiveIntensity: 0.2,
               })
             );
             camera1.rotation.x = Math.PI / 2;
-            camera1.position.set(0, 0, 0.2);
+            camera1.position.set(0, 0, 0.25);
             instruments.add(camera1);
 
             const camera2 = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.05, 0.07, 0.1, 8),
+              new THREE.CylinderGeometry(0.07, 0.09, 0.13, 16),
               new THREE.MeshStandardMaterial({
-                color: 0x111111,
+                color: 0xd4b66a,
                 metalness: 0.6,
                 roughness: 0.3,
+                emissive: 0x886622,
+                emissiveIntensity: 0.2,
               })
             );
             camera2.rotation.x = Math.PI / 2;
             camera2.rotation.z = Math.PI / 6;
-            camera2.position.set(0.12, 0.05, 0.18);
+            camera2.position.set(0.15, 0.05, 0.2);
             instruments.add(camera2);
 
             const lens1 = new THREE.Mesh(
-              new THREE.CircleGeometry(0.05, 16),
+              new THREE.CircleGeometry(0.065, 24),
               new THREE.MeshStandardMaterial({
-                color: 0x222266,
+                color: 0x87ceeb,
                 metalness: 0.9,
                 roughness: 0.1,
-                emissive: 0x0000ff,
-                emissiveIntensity: 0.2,
+                emissive: 0x6495ed,
+                emissiveIntensity: 1.0,
               })
             );
-            lens1.position.set(0, 0, 0.26);
+            lens1.position.set(0, 0, 0.33);
             lens1.rotation.x = Math.PI / 2;
             instruments.add(lens1);
+
+            const lens2 = new THREE.Mesh(
+              new THREE.CircleGeometry(0.055, 24),
+              new THREE.MeshStandardMaterial({
+                color: 0x87ceeb,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: 0x6495ed,
+                emissiveIntensity: 1.0,
+              })
+            );
+            lens2.position.set(0.15, 0.05, 0.27);
+            lens2.rotation.x = Math.PI / 2;
+            lens2.rotation.z = Math.PI / 6;
+            instruments.add(lens2);
 
             group.add(instruments);
 
             const antenna1 = new THREE.Mesh(
               new THREE.CylinderGeometry(0.01, 0.01, 0.8, 8),
               new THREE.MeshStandardMaterial({
-                color: 0xcccccc,
+                color: 0xe6cc99,
                 metalness: 0.8,
                 roughness: 0.3,
+                emissive: 0x997755,
+                emissiveIntensity: 0.2,
               })
             );
-            antenna1.position.set(0, 0.25, -0.3);
+            antenna1.position.set(0, 0.3, -0.3);
             antenna1.rotation.x = Math.PI / 4;
             group.add(antenna1);
 
             const antenna2 = new THREE.Mesh(
               new THREE.CylinderGeometry(0.01, 0.01, 0.8, 8),
               new THREE.MeshStandardMaterial({
-                color: 0xcccccc,
+                color: 0xe6cc99,
                 metalness: 0.8,
                 roughness: 0.3,
+                emissive: 0x997755,
+                emissiveIntensity: 0.2,
               })
             );
-            antenna2.position.set(0, -0.25, -0.3);
+            antenna2.position.set(0, -0.3, -0.3);
             antenna2.rotation.x = -Math.PI / 4;
             group.add(antenna2);
 
-            const rtgGlow = new THREE.PointLight(0xff6a00, 1.0, 2.0);
-            rtgGlow.position.set(-1.8, 0, 0);
+            const rtgGlow = new THREE.PointLight(0xff8800, 3.0, 5.0);
+            rtgGlow.position.set(-1.9, 0, 0);
             group.add(rtgGlow);
+
+            const spacecraftGlow = new THREE.PointLight(0xffcc66, 1.0, 4.0);
+            spacecraftGlow.position.set(0, 0, 0);
+            group.add(spacecraftGlow);
+
+            const highlightGlow = new THREE.PointLight(0xffffcc, 0.7, 2.5);
+            highlightGlow.position.set(0.3, 0.2, 0.3);
+            group.add(highlightGlow);
 
             break;
 
           case "newHorizons":
             const body = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.5, 0.5, 0.7, 16),
+              new THREE.CylinderGeometry(0.55, 0.55, 0.8, 24),
               new THREE.MeshStandardMaterial({
-                color: 0xf5f5f5,
+                color: 0xffe680,
                 metalness: 0.7,
                 roughness: 0.3,
+                emissive: 0x997733,
+                emissiveIntensity: 0.4,
                 envMapIntensity: 1.5,
               })
             );
+            body.position.y = 0.1;
             group.add(body);
 
-            const nhBodyDetail = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.51, 0.51, 0.3, 16),
+            const bodyStripes = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.56, 0.56, 0.4, 24),
               new THREE.MeshStandardMaterial({
-                color: 0x3366cc,
+                color: 0xffd230,
                 metalness: 0.5,
                 roughness: 0.5,
-                emissive: 0x001133,
-                emissiveIntensity: 0.1,
+                emissive: 0xcc7700,
+                emissiveIntensity: 0.4,
               })
             );
-            nhBodyDetail.position.y = 0.15;
-            group.add(nhBodyDetail);
+            bodyStripes.position.y = 0.2;
+            group.add(bodyStripes);
+
+            const blanketMaterial = new THREE.MeshStandardMaterial({
+              color: 0xffd700,
+              metalness: 0.9,
+              roughness: 0.3,
+              emissive: 0xaa7700,
+              emissiveIntensity: 0.5,
+            });
 
             const blanket = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.49, 0.49, 0.68, 16),
-              new THREE.MeshStandardMaterial({
-                color: 0xffd700,
-                metalness: 0.9,
-                roughness: 0.3,
-                emissive: 0x553300,
-                emissiveIntensity: 0.1,
-              })
+              new THREE.CylinderGeometry(0.54, 0.54, 0.78, 24),
+              blanketMaterial
             );
-            blanket.position.y = 0.01;
+            blanket.position.y = 0.1;
             group.add(blanket);
 
             const nhDishGeom = new THREE.SphereGeometry(
-              0.7,
+              0.9,
               32,
               16,
               0,
@@ -3118,135 +3190,204 @@ const VoidVoyager = () => {
               Math.PI / 2
             );
             const nhDishMat = new THREE.MeshStandardMaterial({
-              color: 0xffd700,
+              color: 0xffe6a6,
               metalness: 1.0,
               roughness: 0.1,
               side: THREE.DoubleSide,
-              emissive: 0xaa7700,
-              emissiveIntensity: 0.2,
+              emissive: 0xd4af37,
+              emissiveIntensity: 0.3,
             });
             const nhDish = new THREE.Mesh(nhDishGeom, nhDishMat);
-            nhDish.scale.set(1.2, 1.2, 0.15);
-            nhDish.position.y = 0.5;
+            nhDish.scale.set(1.2, 1.2, 0.2);
+            nhDish.position.y = 0.55;
             nhDish.rotation.x = -Math.PI / 2;
             group.add(nhDish);
 
-            const nhDishInterior = new THREE.Mesh(
-              new THREE.CircleGeometry(0.65, 32),
-              new THREE.MeshStandardMaterial({
-                color: 0xddaa00,
-                metalness: 0.9,
-                roughness: 0.2,
-                side: THREE.DoubleSide,
-                emissive: 0x665500,
-                emissiveIntensity: 0.1,
-              })
-            );
-            nhDishInterior.position.y = 0.48;
-            nhDishInterior.rotation.x = -Math.PI / 2;
-            group.add(nhDishInterior);
-
-            const feedHorn = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.05, 0.1, 0.15, 16),
-              new THREE.MeshStandardMaterial({
-                color: 0xdddddd,
-                metalness: 0.9,
-                roughness: 0.2,
-              })
-            );
-            feedHorn.position.y = 0.35;
-            group.add(feedHorn);
-
-            const nhRtg = new THREE.Mesh(
-              new THREE.BoxGeometry(0.3, 0.4, 0.3),
-              new THREE.MeshStandardMaterial({
-                color: 0x888888,
-                metalness: 0.8,
-                roughness: 0.2,
-                emissive: 0x330000,
-                emissiveIntensity: 0.1,
-              })
-            );
-            nhRtg.position.set(-0.6, -0.2, 0);
-            group.add(nhRtg);
-
-            for (let i = 0; i < 6; i++) {
-              const rtgFin = new THREE.Mesh(
-                new THREE.BoxGeometry(0.3, 0.4, 0.02),
+            for (let i = 0; i < 12; i++) {
+              const angle = (i / 12) * Math.PI * 2;
+              const rib = new THREE.Mesh(
+                new THREE.BoxGeometry(0.02, 0.01, 0.9),
                 new THREE.MeshStandardMaterial({
-                  color: 0x555555,
-                  metalness: 0.9,
+                  color: 0xe6d58b,
+                  metalness: 0.8,
                   roughness: 0.2,
-                  emissive: 0x220000,
-                  emissiveIntensity: 0.1,
+                  emissive: 0xaa9966,
+                  emissiveIntensity: 0.2,
                 })
               );
-              rtgFin.position.set(-0.6, -0.2, 0);
-              rtgFin.rotation.y = (i / 6) * Math.PI;
+              rib.position.y = 0.54;
+              rib.rotation.x = -Math.PI / 2;
+              rib.rotation.z = angle;
+              group.add(rib);
+            }
+
+            for (let r = 0.2; r < 0.9; r += 0.2) {
+              const circlePanel = new THREE.Mesh(
+                new THREE.RingGeometry(r, r + 0.02, 32),
+                new THREE.MeshStandardMaterial({
+                  color: 0xe6cc99,
+                  metalness: 0.8,
+                  roughness: 0.2,
+                  emissive: 0xd4af37,
+                  emissiveIntensity: 0.2,
+                  side: THREE.DoubleSide,
+                })
+              );
+              circlePanel.position.y = 0.53;
+              circlePanel.rotation.x = -Math.PI / 2;
+              group.add(circlePanel);
+            }
+
+            const nhFeedHorn = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.06, 0.12, 0.18, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xd9c077,
+                metalness: 0.9,
+                roughness: 0.2,
+                emissive: 0x997744,
+                emissiveIntensity: 0.2,
+              })
+            );
+            nhFeedHorn.position.y = 0.4;
+            group.add(nhFeedHorn);
+
+            const nhRtg = new THREE.Mesh(
+              new THREE.BoxGeometry(0.4, 0.5, 0.4),
+              new THREE.MeshStandardMaterial({
+                color: 0xd4af37,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: 0x996600,
+                emissiveIntensity: 0.2,
+              })
+            );
+            nhRtg.position.set(-0.7, -0.15, 0);
+            group.add(nhRtg);
+
+            for (let i = 0; i < 8; i++) {
+              const rtgFin = new THREE.Mesh(
+                new THREE.BoxGeometry(0.4, 0.5, 0.03),
+                new THREE.MeshStandardMaterial({
+                  color: 0xc0aa60,
+                  metalness: 0.9,
+                  roughness: 0.2,
+                  emissive: 0x886622,
+                  emissiveIntensity: 0.2,
+                })
+              );
+              rtgFin.position.set(-0.7, -0.15, 0);
+              rtgFin.rotation.y = (i / 8) * Math.PI;
               group.add(rtgFin);
             }
 
+            const nhRtgGlow = new THREE.PointLight(0xff9933, 3.0, 5.0);
+            nhRtgGlow.position.set(-0.7, -0.15, 0);
+            group.add(nhRtgGlow);
+
             const nhInstruments = new THREE.Group();
-            nhInstruments.position.set(0, 0.2, 0.3);
+            nhInstruments.position.set(0, 0.2, 0.4);
 
-            const instrumentPositions = [
-              { x: 0, y: 0, z: 0 },
-              { x: 0.15, y: 0.1, z: 0.05 },
-              { x: -0.15, y: 0.05, z: 0.1 },
-              { x: 0, y: -0.15, z: -0.05 },
-            ];
+            const lorri = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.08, 0.08, 0.3, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xe6c98a,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x997744,
+                emissiveIntensity: 0.2,
+              })
+            );
+            lorri.rotation.x = Math.PI / 2;
+            lorri.position.z = 0.15;
+            nhInstruments.add(lorri);
 
-            instrumentPositions.forEach((pos, idx) => {
-              const color = idx === 0 ? 0x111111 : 0x222222;
-              const size = idx === 0 ? 0.15 : 0.12;
+            const lorriLens = new THREE.Mesh(
+              new THREE.CircleGeometry(0.06, 24),
+              new THREE.MeshStandardMaterial({
+                color: 0x87ceeb,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: 0x6495ed,
+                emissiveIntensity: 0.3,
+              })
+            );
+            lorriLens.position.z = 0.31;
+            lorriLens.rotation.x = Math.PI / 2;
+            lorri.add(lorriLens);
 
-              const instrument = new THREE.Mesh(
-                new THREE.BoxGeometry(size, size, size),
-                new THREE.MeshStandardMaterial({
-                  color: color,
-                  metalness: 0.7,
-                  roughness: 0.3,
-                  emissive: 0x111111,
-                  emissiveIntensity: 0.1,
-                })
-              );
-              instrument.position.set(pos.x, pos.y, pos.z);
-              nhInstruments.add(instrument);
+            const ralph = new THREE.Mesh(
+              new THREE.BoxGeometry(0.15, 0.15, 0.2),
+              new THREE.MeshStandardMaterial({
+                color: 0xe6cc90,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x997744,
+                emissiveIntensity: 0.2,
+              })
+            );
+            ralph.position.set(0.2, 0.1, 0);
+            nhInstruments.add(ralph);
 
-              if (idx < 2) {
-                const lens = new THREE.Mesh(
-                  new THREE.CircleGeometry(size * 0.3, 16),
-                  new THREE.MeshStandardMaterial({
-                    color: 0x3366cc,
-                    metalness: 0.9,
-                    roughness: 0.1,
-                    emissive: 0x0000cc,
-                    emissiveIntensity: 0.2,
-                    side: THREE.DoubleSide,
-                  })
-                );
-                lens.position.z = size / 2 + 0.01;
-                lens.rotation.y = Math.PI / 2;
-                instrument.add(lens);
-              }
-            });
+            const ralphLens = new THREE.Mesh(
+              new THREE.CircleGeometry(0.05, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0x87ceeb,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: 0x6495ed,
+                emissiveIntensity: 0.3,
+                side: THREE.DoubleSide,
+              })
+            );
+            ralphLens.position.z = 0.11;
+            ralphLens.rotation.x = Math.PI / 2;
+            ralph.add(ralphLens);
+
+            const alice = new THREE.Mesh(
+              new THREE.BoxGeometry(0.12, 0.12, 0.15),
+              new THREE.MeshStandardMaterial({
+                color: 0xd9c077,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x997744,
+                emissiveIntensity: 0.2,
+              })
+            );
+            alice.position.set(-0.2, 0.05, 0);
+            nhInstruments.add(alice);
 
             group.add(nhInstruments);
 
+            const starTracker = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.04, 0.05, 0.1, 12),
+              new THREE.MeshStandardMaterial({
+                color: 0xc9b16b,
+                metalness: 0.6,
+                roughness: 0.3,
+                emissive: 0x997744,
+                emissiveIntensity: 0.2,
+              })
+            );
+            starTracker.position.set(0.4, 0.2, 0);
+            starTracker.rotation.z = Math.PI / 2;
+            group.add(starTracker);
+
             const thrusterPositions = [
-              { x: 0, y: -0.4, z: 0.3 },
-              { x: 0, y: -0.4, z: -0.3 },
-              { x: 0.3, y: -0.4, z: 0 },
-              { x: -0.3, y: -0.4, z: 0 },
+              { x: 0, y: -0.3, z: 0.4 },
+              { x: 0, y: -0.3, z: -0.4 },
+              { x: 0.4, y: -0.3, z: 0 },
+              { x: -0.4, y: -0.3, z: 0 },
             ];
 
             thrusterPositions.forEach((pos) => {
               const thruster = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.05, 0.07, 0.1, 8),
+                new THREE.CylinderGeometry(0.06, 0.08, 0.12, 12),
                 new THREE.MeshStandardMaterial({
-                  color: 0x666666,
+                  color: 0xc0a870,
                   metalness: 0.9,
                   roughness: 0.2,
+                  emissive: 0x997744,
+                  emissiveIntensity: 0.2,
                 })
               );
               thruster.position.set(pos.x, pos.y, pos.z);
@@ -3254,21 +3395,13 @@ const VoidVoyager = () => {
               group.add(thruster);
             });
 
-            const starTracker = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.03, 0.04, 0.1, 8),
-              new THREE.MeshStandardMaterial({
-                color: 0x444444,
-                metalness: 0.6,
-                roughness: 0.3,
-              })
-            );
-            starTracker.position.set(0.4, 0.2, 0);
-            starTracker.rotation.z = Math.PI / 2;
-            group.add(starTracker);
+            const nhGlow = new THREE.PointLight(0xffd700, 1.2, 4.0);
+            nhGlow.position.set(0, 0, 0);
+            group.add(nhGlow);
 
-            const nhRtgGlow = new THREE.PointLight(0xff6a00, 1.0, 2.0);
-            nhRtgGlow.position.set(-0.6, -0.2, 0);
-            group.add(nhRtgGlow);
+            const nhHighlightGlow = new THREE.PointLight(0xffffcc, 0.8, 3.0);
+            nhHighlightGlow.position.set(0.2, 0.3, 0.2);
+            group.add(nhHighlightGlow);
 
             break;
 
@@ -6171,17 +6304,23 @@ const VoidVoyager = () => {
               );
             }
           } else if (spacecraft.data.orbitType === "l2") {
-            if (spacecraft.data.startPlanet && planets[spacecraft.data.startPlanet]) {
-              const planetPos = planets[spacecraft.data.startPlanet].container.position.clone();
-              
+            if (
+              spacecraft.data.startPlanet &&
+              planets[spacecraft.data.startPlanet]
+            ) {
+              const planetPos =
+                planets[spacecraft.data.startPlanet].container.position.clone();
+
               const sunToPlanetDir = planetPos.clone().normalize();
-              
-              const l2Pos = planetPos.clone().add(
-                sunToPlanetDir.multiplyScalar(spacecraft.data.distance || 10)
-              );
-              
+
+              const l2Pos = planetPos
+                .clone()
+                .add(
+                  sunToPlanetDir.multiplyScalar(spacecraft.data.distance || 10)
+                );
+
               spacecraft.container.position.copy(l2Pos);
-              
+
               spacecraft.mesh.lookAt(l2Pos.clone().add(sunToPlanetDir));
             }
           }
@@ -6452,62 +6591,64 @@ const VoidVoyager = () => {
     setControlsOpen(!controlsOpen);
   };
 
-  return (<>
-    <GoogleAnalytics />
-    <div className="w-full h-screen bg-black relative overflow-hidden">
-      
-      <div ref={mountRef} className="w-full h-full" />
+  return (
+    <>
+      <GoogleAnalytics />
+      <div className="w-full h-screen bg-black relative overflow-hidden">
+        <div ref={mountRef} className="w-full h-full" />
 
-      {hoveredPlanet && (
-        <div
-          id="planet-tooltip"
-          className="absolute bg-gray-900/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-sm font-medium z-50 pointer-events-none transform-gpu"
-          style={{
-            left: mousePositionRef.current.x + 15,
-            top: mousePositionRef.current.y - 15,
-            border: "1px solid rgba(255, 255, 255, 0.2)",
-            boxShadow:
-              "0 4px 6px rgba(0, 0, 0, 0.5), 0 0 10px rgba(100, 200, 255, 0.3)",
-            opacity: 0.9,
-            transition: "opacity 0.2s ease, transform 0.1s ease-out",
-          }}
-        >
-          <span className="whitespace-nowrap">{hoveredPlanet}</span>
-        </div>
-      )}
-
-      {isMobile && (
-        <div className="absolute top-4 right-4 z-30">
-          <button
-            onClick={toggleControlPanel}
-            className="bg-gray-800 bg-opacity-80 text-white h-12 w-12 rounded-full flex items-center justify-center shadow-lg border border-blue-400"
+        {hoveredPlanet && (
+          <div
+            id="planet-tooltip"
+            className="absolute bg-gray-900/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-sm font-medium z-50 pointer-events-none transform-gpu"
+            style={{
+              left: mousePositionRef.current.x + 15,
+              top: mousePositionRef.current.y - 15,
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              boxShadow:
+                "0 4px 6px rgba(0, 0, 0, 0.5), 0 0 10px rgba(100, 200, 255, 0.3)",
+              opacity: 0.9,
+              transition: "opacity 0.2s ease, transform 0.1s ease-out",
+            }}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d={
-                  controlsOpen
-                    ? "M6 18L18 6M6 6l12 12"
-                    : "M4 6h16M4 12h16M4 18h16"
-                }
-              />
-            </svg>
-          </button>
-        </div>
-      )}
+            <span className="whitespace-nowrap">{hoveredPlanet}</span>
+          </div>
+        )}
 
-      <div
-        className={`absolute ${
-          isMobile ? "top-4 left-4 right-20 max-w-xs" : "top-4 left-4 max-w-xs"
-        } 
+        {isMobile && (
+          <div className="absolute top-4 right-4 z-30">
+            <button
+              onClick={toggleControlPanel}
+              className="bg-gray-800 bg-opacity-80 text-white h-12 w-12 rounded-full flex items-center justify-center shadow-lg border border-blue-400"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d={
+                    controlsOpen
+                      ? "M6 18L18 6M6 6l12 12"
+                      : "M4 6h16M4 12h16M4 18h16"
+                  }
+                />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        <div
+          className={`absolute ${
+            isMobile
+              ? "top-4 left-4 right-20 max-w-xs"
+              : "top-4 left-4 max-w-xs"
+          } 
                    bg-gray-900 bg-opacity-60 ${
                      isMobile ? "p-3" : "p-5"
                    } rounded-2xl text-white shadow-xl backdrop-filter backdrop-blur-lg 
@@ -6517,494 +6658,506 @@ const VoidVoyager = () => {
                        ? "-translate-y-full opacity-0"
                        : "translate-y-0 opacity-100"
                    }`}
-        style={{
-          boxShadow:
-            "0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(30, 120, 255, 0.4)",
-          background:
-            "linear-gradient(135deg, rgba(23, 25, 35, 0.8), rgba(15, 17, 25, 0.9))",
-        }}
-      >
-        <h2
-          className={`${isMobile ? "text-xl" : "text-2xl"} font-bold ${
-            isMobile ? "mb-3" : "mb-5"
-          } text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500`}
+          style={{
+            boxShadow:
+              "0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(30, 120, 255, 0.4)",
+            background:
+              "linear-gradient(135deg, rgba(23, 25, 35, 0.8), rgba(15, 17, 25, 0.9))",
+          }}
         >
-          Void Voyager
-        </h2>
+          <h2
+            className={`${isMobile ? "text-xl" : "text-2xl"} font-bold ${
+              isMobile ? "mb-3" : "mb-5"
+            } text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500`}
+          >
+            Void Voyager
+          </h2>
 
-        <div className={`${isMobile ? "space-y-2" : "space-y-4"}`}>
-          <div className="grid grid-cols-4 gap-2">
-            <label className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition-colors duration-200 group">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={showPlanets}
-                  onChange={(e) => setShowPlanets(e.target.checked)}
-                  className="opacity-0 absolute h-5 w-5"
-                />
-                <div
-                  className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
+          <div className={`${isMobile ? "space-y-2" : "space-y-4"}`}>
+            <div className="grid grid-cols-4 gap-2">
+              <label className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition-colors duration-200 group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={showPlanets}
+                    onChange={(e) => setShowPlanets(e.target.checked)}
+                    className="opacity-0 absolute h-5 w-5"
+                  />
+                  <div
+                    className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
           ${
             showPlanets
               ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
               : "border-blue-400/50 bg-gray-800/50"
           }`}
-                >
-                  <svg
-                    className={`h-3 w-3 text-white ${
-                      showPlanets ? "opacity-100" : "opacity-0"
-                    }`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                    <svg
+                      className={`h-3 w-3 text-white ${
+                        showPlanets ? "opacity-100" : "opacity-0"
+                      }`}
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
                 </div>
-              </div>
-              <Globe className="w-4 h-4 text-blue-300" />
-            </label>
+                <Globe className="w-4 h-4 text-blue-300" />
+              </label>
 
-            <label className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition-colors duration-200 group">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={showOrbits}
-                  onChange={(e) => setShowOrbits(e.target.checked)}
-                  className="opacity-0 absolute h-5 w-5"
-                />
-                <div
-                  className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
+              <label className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition-colors duration-200 group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={showOrbits}
+                    onChange={(e) => setShowOrbits(e.target.checked)}
+                    className="opacity-0 absolute h-5 w-5"
+                  />
+                  <div
+                    className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
           ${
             showOrbits
               ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
               : "border-blue-400/50 bg-gray-800/50"
           }`}
-                >
-                  <svg
-                    className={`h-3 w-3 text-white ${
-                      showOrbits ? "opacity-100" : "opacity-0"
-                    }`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                    <svg
+                      className={`h-3 w-3 text-white ${
+                        showOrbits ? "opacity-100" : "opacity-0"
+                      }`}
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
                 </div>
-              </div>
-              <Orbit className="w-4 h-4 text-blue-300" />
-            </label>
+                <Orbit className="w-4 h-4 text-blue-300" />
+              </label>
 
-            <label className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition-colors duration-200 group">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={showMoons}
-                  onChange={(e) => setShowMoons(e.target.checked)}
-                  className="opacity-0 absolute h-5 w-5"
-                />
-                <div
-                  className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
+              <label className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition-colors duration-200 group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={showMoons}
+                    onChange={(e) => setShowMoons(e.target.checked)}
+                    className="opacity-0 absolute h-5 w-5"
+                  />
+                  <div
+                    className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
           ${
             showMoons
               ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
               : "border-blue-400/50 bg-gray-800/50"
           }`}
-                >
-                  <svg
-                    className={`h-3 w-3 text-white ${
-                      showMoons ? "opacity-100" : "opacity-0"
-                    }`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                    <svg
+                      className={`h-3 w-3 text-white ${
+                        showMoons ? "opacity-100" : "opacity-0"
+                      }`}
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
                 </div>
-              </div>
-              <Moon className="w-4 h-4 text-blue-300" />
-            </label>
+                <Moon className="w-4 h-4 text-blue-300" />
+              </label>
 
-            <label className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition-colors duration-200 group">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  checked={showSpacecraft}
-                  onChange={(e) => setShowSpacecraft(e.target.checked)}
-                  className="opacity-0 absolute h-5 w-5"
-                />
-                <div
-                  className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
+              <label className="flex items-center space-x-2 cursor-pointer hover:text-blue-300 transition-colors duration-200 group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={showSpacecraft}
+                    onChange={(e) => setShowSpacecraft(e.target.checked)}
+                    className="opacity-0 absolute h-5 w-5"
+                  />
+                  <div
+                    className={`border-2 rounded-md h-5 w-5 flex flex-shrink-0 justify-center items-center
           ${
             showSpacecraft
               ? "bg-gradient-to-r from-blue-500 to-indigo-500 border-transparent"
               : "border-blue-400/50 bg-gray-800/50"
           }`}
-                >
-                  <svg
-                    className={`h-3 w-3 text-white ${
-                      showSpacecraft ? "opacity-100" : "opacity-0"
-                    }`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                    <svg
+                      className={`h-3 w-3 text-white ${
+                        showSpacecraft ? "opacity-100" : "opacity-0"
+                      }`}
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
                 </div>
-              </div>
-              <Rocket className="w-4 h-4 text-blue-300" />
-            </label>
-          </div>
-        </div>
-
-        <div className={`${isMobile ? "mt-3" : "mt-5"}`}>
-          <p className="text-xs font-medium text-blue-300 mb-1 flex items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-3 w-3 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-            Orbital Speed
-          </p>
-          <div className="flex items-center space-x-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 text-blue-300"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <div className="relative w-full">
-              <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"
-                  style={{ width: `${(speedMultiplier / 3) * 100}%` }}
-                ></div>
-              </div>
-              <input
-                type="range"
-                min="0.2"
-                max="3"
-                step="0.1"
-                value={speedMultiplier}
-                onChange={(e) => setSpeedMultiplier(parseFloat(e.target.value))}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              />
+                <Rocket className="w-4 h-4 text-blue-300" />
+              </label>
             </div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-blue-300"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-              />
-            </svg>
           </div>
-        </div>
 
-        <div className={`${isMobile ? "mt-3" : "mt-5"}`}>
-          <p className="text-xs font-medium text-blue-300 mb-1 flex items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-3 w-3 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            Focus Planet & Spacecraft
-          </p>
-          <div className="relative w-full">
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full flex items-center justify-between bg-gray-800/90 text-white text-sm p-3 rounded-xl border border-blue-500/40 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-              style={{
-                boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.3)",
-                background:
-                  "linear-gradient(to bottom, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))",
-              }}
-            >
-              <span>{selectedPlanet || "Solar System"}</span>
+          <div className={`${isMobile ? "mt-3" : "mt-5"}`}>
+            <p className="text-xs font-medium text-blue-300 mb-1 flex items-center">
               <svg
-                className="w-4 h-4 text-blue-400"
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-3 w-3 mr-1"
                 fill="none"
-                stroke="currentColor"
                 viewBox="0 0 24 24"
+                stroke="currentColor"
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth="2"
-                  d={isDropdownOpen ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
                 />
               </svg>
-            </button>
+              Orbital Speed
+            </p>
+            <div className="flex items-center space-x-3">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 text-blue-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div className="relative w-full">
+                <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"
+                    style={{ width: `${(speedMultiplier / 3) * 100}%` }}
+                  ></div>
+                </div>
+                <input
+                  type="range"
+                  min="0.2"
+                  max="3"
+                  step="0.1"
+                  value={speedMultiplier}
+                  onChange={(e) =>
+                    setSpeedMultiplier(parseFloat(e.target.value))
+                  }
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-blue-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                />
+              </svg>
+            </div>
+          </div>
 
-            {isDropdownOpen && (
-              <div
-                className="absolute z-50 w-full mt-1 bg-gray-800/95 rounded-lg shadow-lg border border-blue-500/30 overflow-hidden"
+          <div className={`${isMobile ? "mt-3" : "mt-5"}`}>
+            <p className="text-xs font-medium text-blue-300 mb-1 flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-3 w-3 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              Focus Planet & Spacecraft
+            </p>
+            <div className="relative w-full">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full flex items-center justify-between bg-gray-800/90 text-white text-sm p-3 rounded-xl border border-blue-500/40 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                 style={{
-                  maxHeight: "300px",
-                  overflowY: "auto",
-                  backdropFilter: "blur(10px)",
-                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(59, 130, 246, 0.3)"
+                  boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.3)",
+                  background:
+                    "linear-gradient(to bottom, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))",
                 }}
               >
+                <span>{selectedPlanet || "Solar System"}</span>
+                <svg
+                  className="w-4 h-4 text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d={isDropdownOpen ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}
+                  />
+                </svg>
+              </button>
+
+              {isDropdownOpen && (
                 <div
-                  className="px-4 py-2 cursor-pointer hover:bg-blue-500/20 transition-colors border-b border-blue-500/20"
-                  onClick={() => {
-                    setSelectedPlanet(null);
-                    setIsDropdownOpen(false);
-                    
-                    if (cameraRef.current && controlsRef.current) {
-                      const initialPos = new THREE.Vector3(0, 30, 100);
-                      const initialTarget = new THREE.Vector3(0, 0, 0);
-                      
-                      if (focusAnimationIdRef.current) {
-                        cancelAnimationFrame(focusAnimationIdRef.current);
-                        focusAnimationIdRef.current = null;
-                      }
-                      
-                      followingPlanetRef.current = null;
-                      
-                      let frame = 0;
-                      const totalFrames = 100;
-                      const startPos = cameraRef.current.position.clone();
-                      const startTarget = controlsRef.current.target.clone();
-                      
-                      const animateReset = () => {
-                        if (frame <= totalFrames) {
-                          const progress = frame / totalFrames;
-                          const easeOutCubic = 1 - Math.pow(1 - progress, 3);
-                          
-                          cameraRef.current.position.lerpVectors(startPos, initialPos, easeOutCubic);
-                          controlsRef.current.target.lerpVectors(startTarget, initialTarget, easeOutCubic);
-                          controlsRef.current.update();
-                          
-                          frame++;
-                          focusAnimationIdRef.current = requestAnimationFrame(animateReset);
-                        }
-                      };
-                      
-                      animateReset();
-                    }
-                    
-                    controlsRef.current.enableDamping = true;
-                    controlsRef.current.enableRotate = true;
-                    controlsRef.current.enableZoom = true;
-                    if (isMobile) {
-                      setControlsOpen(false);
-                    }
+                  className="absolute z-50 w-full mt-1 bg-gray-800/95 rounded-lg shadow-lg border border-blue-500/30 overflow-hidden"
+                  style={{
+                    maxHeight: "300px",
+                    overflowY: "auto",
+                    backdropFilter: "blur(10px)",
+                    boxShadow:
+                      "0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(59, 130, 246, 0.3)",
                   }}
                 >
-                  <div className="flex items-center">
-                    <Globe className="w-4 h-4 mr-2 text-yellow-400" />
-                    <span>Solar System</span>
-                  </div>
-                </div>
+                  <div
+                    className="px-4 py-2 cursor-pointer hover:bg-blue-500/20 transition-colors border-b border-blue-500/20"
+                    onClick={() => {
+                      setSelectedPlanet(null);
+                      setIsDropdownOpen(false);
 
-                <div className="border-b border-blue-500/20">
-                  <div className="px-4 py-1 text-xs text-blue-300 font-medium bg-blue-900/20">
-                    Planets
-                  </div>
-                  {[
-                    "Mercury",
-                    "Venus",
-                    "Earth",
-                    "Mars",
-                    "Jupiter",
-                    "Saturn",
-                    "Uranus",
-                    "Neptune",
-                  ].map((planet) => (
-                    <div
-                      key={planet}
-                      className="px-4 py-2 pl-6 cursor-pointer hover:bg-blue-500/20 transition-colors"
-                      onClick={() => {
-                        setSelectedPlanet(planet);
-                        setIsDropdownOpen(false);
-                        focusOnPlanet(planet);
-                        if (isMobile) {
-                          setControlsOpen(false);
+                      if (cameraRef.current && controlsRef.current) {
+                        const initialPos = new THREE.Vector3(0, 30, 100);
+                        const initialTarget = new THREE.Vector3(0, 0, 0);
+
+                        if (focusAnimationIdRef.current) {
+                          cancelAnimationFrame(focusAnimationIdRef.current);
+                          focusAnimationIdRef.current = null;
                         }
-                      }}
-                    >
-                      <div className="flex items-center">
-                        <CircleDashed className="w-3 h-3 mr-2 text-blue-400" />
-                        <span>{planet}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
 
-                <div>
-                  <div className="px-4 py-1 text-xs text-blue-300 font-medium bg-blue-900/20">
-                    Spacecrafts
+                        followingPlanetRef.current = null;
+
+                        let frame = 0;
+                        const totalFrames = 100;
+                        const startPos = cameraRef.current.position.clone();
+                        const startTarget = controlsRef.current.target.clone();
+
+                        const animateReset = () => {
+                          if (frame <= totalFrames) {
+                            const progress = frame / totalFrames;
+                            const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+
+                            cameraRef.current.position.lerpVectors(
+                              startPos,
+                              initialPos,
+                              easeOutCubic
+                            );
+                            controlsRef.current.target.lerpVectors(
+                              startTarget,
+                              initialTarget,
+                              easeOutCubic
+                            );
+                            controlsRef.current.update();
+
+                            frame++;
+                            focusAnimationIdRef.current =
+                              requestAnimationFrame(animateReset);
+                          }
+                        };
+
+                        animateReset();
+                      }
+
+                      controlsRef.current.enableDamping = true;
+                      controlsRef.current.enableRotate = true;
+                      controlsRef.current.enableZoom = true;
+                      if (isMobile) {
+                        setControlsOpen(false);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <Globe className="w-4 h-4 mr-2 text-yellow-400" />
+                      <span>Solar System</span>
+                    </div>
                   </div>
-                  {[
-                    "Voyager 1",
-                    "Voyager 2",
-                    "New Horizons",
-                    "Parker Solar Probe",
-                    "James Webb",
-                    "ISS",
-                    "Perseverance",
-                    "Cassini",
-                  ].map((spacecraft) => (
-                    <div
-                      key={spacecraft}
-                      className="px-4 py-2 pl-6 cursor-pointer hover:bg-blue-500/20 transition-colors"
-                      onClick={() => {
-                        setSelectedPlanet(spacecraft);
-                        setIsDropdownOpen(false);
-                        focusOnPlanet(spacecraft);
-                        if (isMobile) {
-                          setControlsOpen(false);
-                        }
-                      }}
-                    >
-                      <div className="flex items-center">
-                        <Rocket className="w-3 h-3 mr-2 text-blue-400" />
-                        <span>{spacecraft}</span>
-                      </div>
+
+                  <div className="border-b border-blue-500/20">
+                    <div className="px-4 py-1 text-xs text-blue-300 font-medium bg-blue-900/20">
+                      Planets
                     </div>
-                  ))}
+                    {[
+                      "Mercury",
+                      "Venus",
+                      "Earth",
+                      "Mars",
+                      "Jupiter",
+                      "Saturn",
+                      "Uranus",
+                      "Neptune",
+                    ].map((planet) => (
+                      <div
+                        key={planet}
+                        className="px-4 py-2 pl-6 cursor-pointer hover:bg-blue-500/20 transition-colors"
+                        onClick={() => {
+                          setSelectedPlanet(planet);
+                          setIsDropdownOpen(false);
+                          focusOnPlanet(planet);
+                          if (isMobile) {
+                            setControlsOpen(false);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center">
+                          <CircleDashed className="w-3 h-3 mr-2 text-blue-400" />
+                          <span>{planet}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <div className="px-4 py-1 text-xs text-blue-300 font-medium bg-blue-900/20">
+                      Spacecrafts
+                    </div>
+                    {[
+                      "Voyager 1",
+                      "Voyager 2",
+                      "New Horizons",
+                      "Parker Solar Probe",
+                      "James Webb",
+                      "ISS",
+                      "Perseverance",
+                      "Cassini",
+                    ].map((spacecraft) => (
+                      <div
+                        key={spacecraft}
+                        className="px-4 py-2 pl-6 cursor-pointer hover:bg-blue-500/20 transition-colors"
+                        onClick={() => {
+                          setSelectedPlanet(spacecraft);
+                          setIsDropdownOpen(false);
+                          focusOnPlanet(spacecraft);
+                          if (isMobile) {
+                            setControlsOpen(false);
+                          }
+                        }}
+                      >
+                        <div className="flex items-center">
+                          <Rocket className="w-3 h-3 mr-2 text-blue-400" />
+                          <span>{spacecraft}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
 
-        {!isMobile && (
-          <div className="mt-2 text-xs text-gray-300 border-t border-gray-700 pt-2">
-            <p className="flex items-center justify-center">
-              <span className="inline-flex items-center mr-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3 w-3 mr-1 text-blue-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
-                  />
-                </svg>
-                Drag to rotate
-              </span>
-              <span className="inline-flex items-center mr-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3 w-3 mr-1 text-blue-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                Scroll to zoom
-              </span>
-              <span className="inline-flex items-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3 w-3 mr-1 text-blue-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-                  />
-                </svg>
-                Tap planet to select
-              </span>
-            </p>
-          </div>
-        )}
+          {!isMobile && (
+            <div className="mt-2 text-xs text-gray-300 border-t border-gray-700 pt-2">
+              <p className="flex items-center justify-center">
+                <span className="inline-flex items-center mr-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-3 w-3 mr-1 text-blue-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
+                    />
+                  </svg>
+                  Drag to rotate
+                </span>
+                <span className="inline-flex items-center mr-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-3 w-3 mr-1 text-blue-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  Scroll to zoom
+                </span>
+                <span className="inline-flex items-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-3 w-3 mr-1 text-blue-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+                    />
+                  </svg>
+                  Tap planet to select
+                </span>
+              </p>
+            </div>
+          )}
 
-        <div
-          className={`${
-            isMobile ? "mt-3 text-xs" : "mt-4 text-xs"
-          } text-center border-t border-gray-700 ${
-            isMobile ? "pt-2" : "pt-3"
-          } flex items-center justify-center space-x-2`}
-        >
-          <span>
-            Made with ❤️ by{" "}
+          <div
+            className={`${
+              isMobile ? "mt-3 text-xs" : "mt-4 text-xs"
+            } text-center border-t border-gray-700 ${
+              isMobile ? "pt-2" : "pt-3"
+            } flex items-center justify-center space-x-2`}
+          >
+            <span>
+              Made with ❤️ by{" "}
+              <a
+                href="https://pranavpawar.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                Pranav
+              </a>
+            </span>
             <a
-              href="https://pranavpawar.vercel.app"
+              href="https://github.com/Pranav2442"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-400 hover:text-blue-300 transition-colors"
             >
-              Pranav
+              <Github size={14} />
             </a>
-          </span>
-          <a
-            href="https://github.com/Pranav2442"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            <Github size={14} />
-          </a>
+          </div>
         </div>
       </div>
-    </div>
     </>
   );
 };
