@@ -304,7 +304,7 @@ const VoidVoyager = () => {
     orbitControls.rotateSpeed = isMobile ? 0.5 : 1;
     orbitControls.zoomSpeed = isMobile ? 0.7 : 1;
     orbitControls.minDistance = 15;
-    orbitControls.maxDistance = 300;
+    orbitControls.maxDistance = 800;
     controlsRef.current = orbitControls;
 
     const sunGeometry = new THREE.SphereGeometry(
@@ -431,14 +431,14 @@ const VoidVoyager = () => {
       {
         name: "Mercury",
         radius: 1.5,
-        distance: 28,
+        distance: 20,
         color: 0xff7700,
         emissive: 0x552200,
         roughness: 0.8,
         metalness: 0.5,
-        speed: 0.004,
-        tilt: 0.034,
-        eccentricity: 0.205,
+        speed: 0.01245,
+        tilt: 0.0006,
+        eccentricity: 0.206,
         description:
           "Mercury is the smallest planet in the Solar System and the closest to the Sun. Its heavily cratered surface resembles our Moon. With extreme temperature variations, the dayside can reach 430°C while the nightside plunges to -180°C.",
         moons: [],
@@ -446,13 +446,14 @@ const VoidVoyager = () => {
       {
         name: "Venus",
         radius: 2.3,
-        distance: 38,
+        distance: 43,
         color: 0xf5e79b,
         emissive: 0x3a2f1a,
         roughness: 0.5,
         metalness: 0.1,
-        speed: 0.0035,
-        tilt: 0.002,
+        speed: 0.00488,
+        tilt: 3.1,
+        eccentricity: 0.007,
         description:
           "Venus is the hottest planet in our Solar System, with a thick, toxic atmosphere that traps heat. It has extreme greenhouse effect.",
         atmosphere: true,
@@ -463,13 +464,14 @@ const VoidVoyager = () => {
       {
         name: "Earth",
         radius: 2.2,
-        distance: 50,
+        distance: 55,
         color: 0x2ba3d8,
         emissive: 0x1a3a5a,
         roughness: 0.4,
         metalness: 0.1,
         speed: 0.003,
         tilt: 0.41,
+        eccentricity: 0.017,
         atmosphere: true,
         atmosphereColor: 0x8cd9ff,
         textured: true,
@@ -479,13 +481,13 @@ const VoidVoyager = () => {
         moons: [
           {
             name: "Moon",
-            radius: 0.7,
+            radius: 0.6,
             distance: 5,
             color: 0xf5f5f5,
             emissive: 0x323232,
             roughness: 0.8,
             metalness: 0.1,
-            speed: 0.015,
+            speed: 0.04,
             textured: true,
           },
         ],
@@ -493,13 +495,14 @@ const VoidVoyager = () => {
       {
         name: "Mars",
         radius: 1.5,
-        distance: 60,
+        distance: 71,
         color: 0xf67c3c,
         emissive: 0x522b1a,
         roughness: 0.7,
         metalness: 0.0,
-        speed: 0.0024,
+        speed: 0.00159,
         tilt: 0.44,
+        eccentricity: 0.093,
         atmosphere: true,
         atmosphereColor: 0xf6b588,
         customShader: true,
@@ -508,218 +511,192 @@ const VoidVoyager = () => {
         moons: [
           {
             name: "Phobos",
-            radius: 0.4,
-            distance: 3.5,
+            radius: 0.2,
+            distance: 2.5,
             color: 0xd0c7a9,
             emissive: 0x333328,
             roughness: 0.9,
             metalness: 0.1,
-            speed: 0.02,
+            speed: 0.45,
           },
           {
             name: "Deimos",
-            radius: 0.3,
-            distance: 4.5,
+            radius: 0.15,
+            distance: 4,
             color: 0xd4cdc3,
             emissive: 0x333328,
             roughness: 0.9,
             metalness: 0.1,
-            speed: 0.015,
+            speed: 0.1,
           },
         ],
       },
       {
         name: "Jupiter",
         radius: 5.2,
-        distance: 80,
+        distance: 116,
         color: 0xf4b87d,
         emissive: 0x4d3419,
         roughness: 0.5,
         metalness: 0.1,
-        speed: 0.0013,
-        tilt: 0.05,
+        speed: 0.000253,
+        tilt: 0.055,
+        eccentricity: 0.049,
         bands: true,
         jupiterRealistic: true,
         description:
           "Jupiter is the largest planet in our Solar System. It's a gas giant with a distinctive Great Red Spot, which is a giant, persistent storm.",
-        moons: isLowPerformance
-          ? [
-              {
-                name: "Ganymede",
-                radius: 0.9,
-                distance: 10,
-                color: 0xf3f3f3,
-                emissive: 0x323232,
-                roughness: 0.7,
-                metalness: 0.2,
-                speed: 0.015,
-              },
-            ]
-          : [
-              {
-                name: "Io",
-                radius: 0.7,
-                distance: 6.5,
-                color: 0xf1df5a,
-                emissive: 0x4d451c,
-                roughness: 0.6,
-                metalness: 0.2,
-                speed: 0.02,
-              },
-              {
-                name: "Europa",
-                radius: 0.6,
-                distance: 8.5,
-                color: 0xf5f5fa,
-                emissive: 0x353542,
-                roughness: 0.4,
-                metalness: 0.3,
-                speed: 0.018,
-              },
-              {
-                name: "Ganymede",
-                radius: 0.9,
-                distance: 10.5,
-                color: 0xf3f3f3,
-                emissive: 0x323232,
-                roughness: 0.7,
-                metalness: 0.2,
-                speed: 0.015,
-              },
-              {
-                name: "Callisto",
-                radius: 0.8,
-                distance: 12.5,
-                color: 0xa4a09b,
-                emissive: 0x323232,
-                roughness: 0.8,
-                metalness: 0.1,
-                speed: 0.01,
-              },
-            ],
+        moons: [
+          {
+            name: "Io",
+            radius: 0.7,
+            distance: 7,
+            color: 0xf1df5a,
+            emissive: 0x4d451c,
+            roughness: 0.6,
+            metalness: 0.2,
+            speed: 0.06,
+          },
+          {
+            name: "Europa",
+            radius: 0.6,
+            distance: 9,
+            color: 0xf5f5fa,
+            emissive: 0x353542,
+            roughness: 0.4,
+            metalness: 0.3,
+            speed: 0.03,
+          },
+          {
+            name: "Ganymede",
+            radius: 0.9,
+            distance: 12,
+            color: 0xf3f3f3,
+            emissive: 0x323232,
+            roughness: 0.7,
+            metalness: 0.2,
+            speed: 0.015,
+          },
+          {
+            name: "Callisto",
+            radius: 0.8,
+            distance: 16,
+            color: 0xa4a09b,
+            emissive: 0x323232,
+            roughness: 0.8,
+            metalness: 0.1,
+            speed: 0.007,
+          },
+        ],
       },
       {
         name: "Saturn",
         radius: 4,
-        distance: 110,
+        distance: 139,
         color: 0xf9df96,
         emissive: 0x4d421f,
         roughness: 0.5,
         metalness: 0.2,
-        speed: 0.0009,
+        speed: 0.000102,
         tilt: 0.47,
+        eccentricity: 0.054,
         bands: true,
         saturnRealistic: true,
         enhancedRings: true,
         description:
           "Saturn is famous for its stunning ring system. It's a gas giant composed mainly of hydrogen and helium.",
         rings: true,
-        moons: isLowPerformance
-          ? [
-              {
-                name: "Titan",
-                radius: 0.9,
-                distance: 11,
-                color: 0xffdb68,
-                emissive: 0x433a1d,
-                roughness: 0.6,
-                metalness: 0.2,
-                speed: 0.01,
-              },
-            ]
-          : [
-              {
-                name: "Titan",
-                radius: 0.9,
-                distance: 11,
-                color: 0xffdb68,
-                emissive: 0x433a1d,
-                roughness: 0.6,
-                metalness: 0.2,
-                speed: 0.01,
-              },
-              {
-                name: "Enceladus",
-                radius: 0.5,
-                distance: 8,
-                color: 0xffffff,
-                emissive: 0x323239,
-                roughness: 0.3,
-                metalness: 0.4,
-                speed: 0.015,
-              },
-            ],
+        moons: [
+          {
+            name: "Titan",
+            radius: 0.9,
+            distance: 12,
+            color: 0xffdb68,
+            emissive: 0x433a1d,
+            roughness: 0.6,
+            metalness: 0.2,
+            speed: 0.005,
+          },
+          {
+            name: "Enceladus",
+            radius: 0.3,
+            distance: 7,
+            color: 0xffffff,
+            emissive: 0x323239,
+            roughness: 0.3,
+            metalness: 0.4,
+            speed: 0.01,
+          },
+        ],
       },
       {
         name: "Uranus",
         radius: 2.8,
-        distance: 140,
+        distance: 164,
         color: 0x4be2ee,
         emissive: 0x194d4e,
         roughness: 0.5,
         metalness: 0.3,
-        speed: 0.0006,
+        speed: 0.0000357,
         tilt: 1.71,
+        eccentricity: 0.047,
         atmosphere: true,
         atmosphereColor: 0x99fafe,
         customShader: true,
         rings: true,
         description:
           "Uranus is an ice giant with a unique feature - it rotates on its side, likely due to a massive collision in its early history.",
-        moons: isLowPerformance
-          ? []
-          : [
-              {
-                name: "Titania",
-                radius: 0.6,
-                distance: 6.5,
-                color: 0xd4d4d4,
-                emissive: 0x323232,
-                roughness: 0.7,
-                metalness: 0.1,
-                speed: 0.013,
-              },
-              {
-                name: "Oberon",
-                radius: 0.55,
-                distance: 8.5,
-                color: 0x929292,
-                emissive: 0x323232,
-                roughness: 0.8,
-                metalness: 0.1,
-                speed: 0.01,
-              },
-            ],
+        moons: [
+          {
+            name: "Titania",
+            radius: 0.6,
+            distance: 6.5,
+            color: 0xd4d4d4,
+            emissive: 0x323232,
+            roughness: 0.7,
+            metalness: 0.1,
+            speed: 0.008,
+          },
+          {
+            name: "Oberon",
+            radius: 0.55,
+            distance: 8.5,
+            color: 0x929292,
+            emissive: 0x323232,
+            roughness: 0.8,
+            metalness: 0.1,
+            speed: 0.006,
+          },
+        ],
       },
       {
         name: "Neptune",
         radius: 2.8,
-        distance: 170,
+        distance: 180,
         color: 0x2b5dfe,
         emissive: 0x17265d,
         roughness: 0.5,
         metalness: 0.3,
-        speed: 0.0005,
+        speed: 0.0000182,
         tilt: 0.49,
+        eccentricity: 0.009,
         atmosphere: true,
         atmosphereColor: 0x6fa3fa,
         customShader: true,
         description:
           "Neptune is the farthest planet from the Sun. It's an ice giant with the strongest winds in the Solar System, reaching speeds of 2,100 km/h.",
-        moons: isLowPerformance
-          ? []
-          : [
-              {
-                name: "Triton",
-                radius: 0.7,
-                distance: 7.5,
-                color: 0xffffff,
-                emissive: 0x32323b,
-                roughness: 0.6,
-                metalness: 0.2,
-                speed: 0.012,
-              },
-            ],
+        moons: [
+          {
+            name: "Triton",
+            radius: 0.7,
+            distance: 7.5,
+            color: 0xffffff,
+            emissive: 0x32323b,
+            roughness: 0.6,
+            metalness: 0.2,
+            speed: 0.009,
+          },
+        ],
       },
     ];
 
@@ -728,11 +705,11 @@ const VoidVoyager = () => {
         name: "Voyager 1",
         modelType: "voyager",
         startPlanet: null,
-        startPosition: new THREE.Vector3(180, 40, 180),
+        startPosition: new THREE.Vector3(230, 40, 230),
         orbitType: "escape",
         escapeVector: new THREE.Vector3(0.5, 0.2, 0.5).normalize(),
         scale: 2.5,
-        speed: 0.015,
+        speed: 0.00015,
         distance: 230,
         angle: Math.PI * 0.7,
         description:
@@ -742,11 +719,11 @@ const VoidVoyager = () => {
         name: "Voyager 2",
         modelType: "voyager",
         startPlanet: null,
-        startPosition: new THREE.Vector3(-160, -20, 200),
+        startPosition: new THREE.Vector3(-210, -20, 200),
         orbitType: "escape",
         escapeVector: new THREE.Vector3(-0.6, -0.1, 0.7).normalize(),
         scale: 2.5,
-        speed: 0.014,
+        speed: 0.00014,
         distance: 210,
         angle: Math.PI * 1.3,
         description:
@@ -760,7 +737,7 @@ const VoidVoyager = () => {
         orbitType: "escape",
         escapeVector: new THREE.Vector3(0.3, 0.1, -0.9).normalize(),
         scale: 2,
-        speed: 0.016,
+        speed: 0.00016,
         distance: 190,
         angle: Math.PI * 1.8,
         description: "Flew by Pluto in 2015, now exploring the Kuiper Belt.",
@@ -775,7 +752,7 @@ const VoidVoyager = () => {
           semiMajor: 18,
           semiMinor: 12,
           center: new THREE.Vector3(3, 0, 0),
-          incline: 0.1,
+          incline: 0.12,
           period: 5000,
         },
         scale: 1.0,
@@ -801,7 +778,7 @@ const VoidVoyager = () => {
         modelType: "iss",
         startPlanet: "Earth",
         orbitType: "planetary",
-        distance: 3,
+        distance: 2.8,
         scale: 0.3,
         speed: 0.05,
         angle: 0,
@@ -830,6 +807,31 @@ const VoidVoyager = () => {
         angle: Math.PI * 0.3,
         description:
           "Studied Saturn and its moons from 2004 to 2017 before its Grand Finale descent.",
+      },
+      {
+        name: "Aditya L1",
+        modelType: "adityaL1",
+        startPlanet: null,
+        orbitType: "l1",
+        startPosition: new THREE.Vector3(35, 0, 0),
+        distance: 15,
+        scale: 1.2,
+        speed: 0.003,
+        angle: Math.PI * 0.1,
+        description:
+          "India's first space-based solar observatory positioned at the L1 Lagrangian point between Earth and Sun, studying solar corona, solar emissions, and solar winds.",
+      },
+      {
+        name: "Mangalyaan",
+        modelType: "mangalyaan",
+        startPlanet: "Mars",
+        orbitType: "planetary",
+        distance: 6,
+        scale: 0.8,
+        speed: 0.008,
+        angle: Math.PI * 0.7,
+        description:
+          "India's first interplanetary mission and the first Asian mission to reach Mars orbit. The Mars Orbiter Mission studies the Martian atmosphere and surface mineralogy.",
       },
     ];
 
@@ -2422,16 +2424,16 @@ const VoidVoyager = () => {
       const asteroidBelt = new THREE.Object3D();
       scene.add(asteroidBelt);
 
-      const beltInnerRadius = 65;
-      const beltOuterRadius = 75;
-      const beltThickness = 5;
+      const beltInnerRadius = 160;
+      const beltOuterRadius = 170;
+      const beltThickness = 8;
 
       const kirkwoodGaps = [
-        { position: 66.7, width: 0.5 },
-        { position: 68.8, width: 0.6 },
-        { position: 71.8, width: 0.7 },
-        { position: 72.8, width: 0.5 },
-        { position: 73.7, width: 0.8 },
+        { position: 161.7, width: 0.8 },
+        { position: 163.8, width: 1.0 },
+        { position: 165.8, width: 1.2 },
+        { position: 167.8, width: 0.9 },
+        { position: 169.2, width: 1.1 },
       ];
 
       const createAsteroidTypes = () => {
@@ -2826,6 +2828,251 @@ const VoidVoyager = () => {
         const group = new THREE.Group();
 
         switch (type) {
+          case "adityaL1":
+            const adityaBody = new THREE.Group();
+
+            const adityaMainBus = new THREE.Mesh(
+              new THREE.BoxGeometry(0.7, 0.7, 1.0),
+              new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.8,
+                roughness: 0.2,
+                envMapIntensity: 2.0,
+                emissive: 0x555555,
+                emissiveIntensity: 0.3,
+              })
+            );
+            adityaBody.add(adityaMainBus);
+
+            const adityaGoldFoilMaterial = new THREE.MeshStandardMaterial({
+              color: 0xffd700,
+              metalness: 1.0,
+              roughness: 0.2,
+              emissive: 0xff8800,
+              emissiveIntensity: 0.5,
+            });
+
+            const adityaBodyGoldLayer = new THREE.Mesh(
+              new THREE.BoxGeometry(0.72, 0.72, 1.02),
+              adityaGoldFoilMaterial
+            );
+            adityaBodyGoldLayer.position.z = 0;
+            adityaBodyGoldLayer.scale.set(0.9, 0.9, 0.3);
+            adityaMainBus.add(adityaBodyGoldLayer);
+
+            const adityaPanel1 = new THREE.Mesh(
+              new THREE.BoxGeometry(3.0, 0.05, 1.2),
+              new THREE.MeshStandardMaterial({
+                color: 0x3366ff,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x0033cc,
+                emissiveIntensity: 0.6,
+              })
+            );
+            adityaPanel1.position.set(1.8, 0, 0);
+            adityaBody.add(adityaPanel1);
+
+            const adityaPanel1Grid = new THREE.Group();
+            for (let x = 0; x < 8; x++) {
+              for (let z = 0; z < 4; z++) {
+                const cell = new THREE.Mesh(
+                  new THREE.PlaneGeometry(0.34, 0.25),
+                  new THREE.MeshStandardMaterial({
+                    color: 0x2244ff,
+                    metalness: 0.8,
+                    roughness: 0.2,
+                    emissive: 0x0033ff,
+                    emissiveIntensity: 0.5,
+                    side: THREE.DoubleSide,
+                  })
+                );
+                cell.position.set(-1.4 + x * 0.36, 0.03, -0.55 + z * 0.27);
+                cell.rotation.x = Math.PI / 2;
+                adityaPanel1Grid.add(cell);
+              }
+            }
+            adityaPanel1.add(adityaPanel1Grid);
+
+            const adityaPanel2 = new THREE.Mesh(
+              new THREE.BoxGeometry(3.0, 0.05, 1.2),
+              new THREE.MeshStandardMaterial({
+                color: 0x3366ff,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x0033cc,
+                emissiveIntensity: 0.6,
+              })
+            );
+            adityaPanel2.position.set(-1.8, 0, 0);
+            adityaBody.add(adityaPanel2);
+
+            const adityaPanel2Grid = adityaPanel1Grid.clone();
+            adityaPanel2.add(adityaPanel2Grid);
+
+            const velc = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.2, 0.25, 0.4, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0x444444,
+                metalness: 0.6,
+                roughness: 0.4,
+                emissive: 0x222222,
+                emissiveIntensity: 0.3,
+              })
+            );
+            velc.rotation.x = Math.PI / 2;
+            velc.position.set(0, 0.2, 0.6);
+            adityaBody.add(velc);
+
+            const velcAperture = new THREE.Mesh(
+              new THREE.CircleGeometry(0.15, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0x000000,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: 0x000000,
+                side: THREE.DoubleSide,
+              })
+            );
+            velcAperture.position.z = 0.21;
+            velcAperture.rotation.y = Math.PI / 2;
+            velc.add(velcAperture);
+
+            const solexs = new THREE.Mesh(
+              new THREE.BoxGeometry(0.25, 0.25, 0.3),
+              new THREE.MeshStandardMaterial({
+                color: 0x666666,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x333333,
+                emissiveIntensity: 0.3,
+              })
+            );
+            solexs.position.set(0.3, 0.3, 0.5);
+            adityaBody.add(solexs);
+
+            const adityaAntenna = new THREE.Mesh(
+              new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8),
+              new THREE.MeshStandardMaterial({
+                color: 0xdddddd,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: 0x777777,
+                emissiveIntensity: 0.3,
+              })
+            );
+            adityaAntenna.rotation.x = Math.PI / 2;
+            adityaAntenna.position.set(0, -0.4, 0.3);
+            adityaBody.add(adityaAntenna);
+
+            const adityaDishAnt = new THREE.Mesh(
+              new THREE.SphereGeometry(
+                0.3,
+                32,
+                16,
+                0,
+                Math.PI * 2,
+                0,
+                Math.PI / 2
+              ),
+              new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: 0xaaaaaa,
+                emissiveIntensity: 0.5,
+                side: THREE.DoubleSide,
+              })
+            );
+            adityaDishAnt.rotation.x = Math.PI;
+            adityaDishAnt.position.set(0, -0.4, 0.7);
+            adityaBody.add(adityaDishAnt);
+
+            const isroBadge = new THREE.Mesh(
+              new THREE.CircleGeometry(0.15, 16),
+              new THREE.MeshStandardMaterial({
+                color: 0xff6600,
+                emissive: 0xff3300,
+                emissiveIntensity: 0.8,
+                side: THREE.DoubleSide,
+              })
+            );
+            isroBadge.position.set(0, 0.36, 0.51);
+            isroBadge.rotation.x = Math.PI / 2;
+            adityaBody.add(isroBadge);
+
+            const flagGroup = new THREE.Group();
+            flagGroup.position.set(-0.35, 0.36, 0.51);
+
+            const flagBase = new THREE.Mesh(
+              new THREE.PlaneGeometry(0.15, 0.1),
+              new THREE.MeshBasicMaterial({
+                side: THREE.DoubleSide,
+              })
+            );
+            flagBase.rotation.x = Math.PI / 2;
+
+            const saffronStripe = new THREE.Mesh(
+              new THREE.PlaneGeometry(0.15, 0.033),
+              new THREE.MeshBasicMaterial({
+                color: 0xff9933,
+                side: THREE.DoubleSide,
+                emissive: 0xff6600,
+                emissiveIntensity: 0.5,
+              })
+            );
+            saffronStripe.position.y = 0.033;
+            saffronStripe.rotation.x = Math.PI / 2;
+
+            const whiteStripe = new THREE.Mesh(
+              new THREE.PlaneGeometry(0.15, 0.033),
+              new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                side: THREE.DoubleSide,
+                emissive: 0xaaaaaa,
+                emissiveIntensity: 0.3,
+              })
+            );
+            whiteStripe.rotation.x = Math.PI / 2;
+
+            const greenStripe = new THREE.Mesh(
+              new THREE.PlaneGeometry(0.15, 0.033),
+              new THREE.MeshBasicMaterial({
+                color: 0x138808,
+                side: THREE.DoubleSide,
+                emissive: 0x0a5c04,
+                emissiveIntensity: 0.5,
+              })
+            );
+            greenStripe.position.y = -0.033;
+            greenStripe.rotation.x = Math.PI / 2;
+
+            flagGroup.add(saffronStripe);
+            flagGroup.add(whiteStripe);
+            flagGroup.add(greenStripe);
+            adityaBody.add(flagGroup);
+
+            const adityaGlow = new THREE.PointLight(0x44aaff, 2.0, 8.0);
+            adityaGlow.position.set(0, 0, 0);
+            adityaBody.add(adityaGlow);
+
+            const adityaSunGlow = new THREE.PointLight(0xffaa44, 1.5, 5.0);
+            adityaSunGlow.position.set(0, 0, 0.7);
+            adityaBody.add(adityaSunGlow);
+
+            const adityaBodyGlow = new THREE.Mesh(
+              new THREE.SphereGeometry(1.0, 16, 16),
+              new THREE.MeshBasicMaterial({
+                color: 0x4488ff,
+                transparent: true,
+                opacity: 0.1,
+                side: THREE.BackSide,
+              })
+            );
+            adityaBody.add(adityaBodyGlow);
+
+            group.add(adityaBody);
+            break;
           case "voyager":
             const mainBusGeometry = new THREE.BoxGeometry(0.7, 0.3, 1.2);
             const mainBusMaterial = new THREE.MeshStandardMaterial({
@@ -6903,27 +7150,44 @@ const VoidVoyager = () => {
             <div className="relative w-full">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="w-full flex items-center justify-between bg-gray-800/90 text-white text-sm p-3 rounded-xl border border-blue-500/40 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
-                style={{
-                  boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.3)",
-                  background:
-                    "linear-gradient(to bottom, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))",
-                }}
+                className="w-full flex items-center justify-between bg-black/60 backdrop-blur-lg text-white font-semibold text-lg py-3.5 px-5 rounded-2xl border-l border-t border-r border-b border-purple-500/30 hover:border-purple-400/50 shadow-[0_0_20px_rgba(168,85,247,0.15)] hover:shadow-[0_0_25px_rgba(168,85,247,0.25)] transition-all duration-300 relative overflow-hidden group"
               >
-                <span>{selectedPlanet || "Solar System"}</span>
-                <svg
-                  className="w-4 h-4 text-blue-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d={isDropdownOpen ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}
-                  />
-                </svg>
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 via-fuchsia-600/5 to-purple-600/10 opacity-40 group-hover:opacity-60 transition-opacity duration-300"></div>
+
+                <div className="absolute -inset-1 bg-gradient-to-r from-transparent via-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 blur-sm transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-all duration-1500 ease-out"></div>
+
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-purple-300 transform group-hover:scale-110 transition-transform duration-300">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0110 2c-2.76 0-5 2.24-5 5v1h-.5A1.5 1.5 0 003 9.5v.5c0 .97.23 1.89.65 2.7" />
+                      <path d="M14.5 11H14v-.5c0-.83-.67-1.5-1.5-1.5h-1v.5a.5.5 0 01-.5.5H9.5a.5.5 0 01-.5-.5V9H8c-.55 0-1 .45-1 1v1h-.5A1.5 1.5 0 005 12.5V13c0 .97.23 1.89.65 2.7" />
+                    </svg>
+                  </span>
+                  <span className="bg-gradient-to-br from-white via-purple-100 to-purple-200 text-transparent bg-clip-text">
+                    {selectedPlanet || "Solar System"}
+                  </span>
+                </div>
+
+                <div className="relative z-10 rounded-full p-1.5 bg-purple-900/40 group-hover:bg-purple-800/50 transition-colors duration-300">
+                  <svg
+                    className="w-4 h-4 text-purple-300 transform transition-all duration-300 group-hover:rotate-180"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d={isDropdownOpen ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}
+                    />
+                  </svg>
+                </div>
               </button>
 
               {isDropdownOpen && (
@@ -7046,6 +7310,8 @@ const VoidVoyager = () => {
                       "ISS",
                       "Perseverance",
                       "Cassini",
+                      "Aditya L1",
+                      "Mangalyaan",
                     ].map((spacecraft) => (
                       <div
                         key={spacecraft}
