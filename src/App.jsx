@@ -6920,12 +6920,18 @@ const VoidVoyager = () => {
             <span
               className="relative inline-block"
               style={{
-                color: "#e0f2fe",
                 letterSpacing: isMobile ? "0.03em" : "0.06em",
                 fontSize: "clamp(3rem, 3vw, 4.5rem)",
               }}
             >
-              <span className="relative z-10">SpaceTrek</span>
+              <span
+                className="relative z-10 bg-gradient-to-r from-fuchsia-200 via-sky-100 to-violet-200 text-transparent bg-clip-text"
+                style={{
+                  textShadow: "0 0 25px rgba(196, 181, 253, 0.5)",
+                }}
+              >
+                SpaceTrek
+              </span>
               <div
                 className="absolute -bottom-1 left-0 right-0 bg-gradient-to-r from-transparent via-sky-400 to-transparent"
                 style={{
