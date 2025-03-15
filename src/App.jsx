@@ -6866,7 +6866,7 @@ const VoidVoyager = () => {
           <div className="absolute top-4 right-4 z-30">
             <button
               onClick={toggleControlPanel}
-              className="bg-gray-800 bg-opacity-80 text-white h-12 w-12 rounded-full flex items-center justify-center shadow-lg border border-blue-400"
+              className="control-toggle-button bg-gray-800 bg-opacity-80 text-white h-12 w-12 rounded-full flex items-center justify-center shadow-lg border border-blue-400"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -6913,11 +6913,27 @@ const VoidVoyager = () => {
           }}
         >
           <h2
-            className={`${isMobile ? "text-xl" : "text-2xl"} font-bold ${
+            className={`${isMobile ? "text-lg" : "text-2xl"} font-bold ${
               isMobile ? "mb-3" : "mb-5"
-            } text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500`}
+            } text-center relative`}
           >
-            Void Voyager
+            <span
+              className="relative inline-block"
+              style={{
+                color: "#e0f2fe",
+                letterSpacing: isMobile ? "0.03em" : "0.06em",
+                fontSize: "clamp(3rem, 3vw, 4.5rem)",
+              }}
+            >
+              <span className="relative z-10">SpaceTrek</span>
+              <div
+                className="absolute -bottom-1 left-0 right-0 bg-gradient-to-r from-transparent via-sky-400 to-transparent"
+                style={{
+                  height: "clamp(0.5px, 0.15vw, 1px)",
+                  boxShadow: "0 0 8px rgba(56, 189, 248, 0.6)",
+                }}
+              ></div>
+            </span>
           </h2>
 
           <div className={`${isMobile ? "space-y-2" : "space-y-4"}`}>
